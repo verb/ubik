@@ -95,10 +95,11 @@ def kqueue_event_loop():
             kev_out = kq.control(kev_in, 5, 1)
         kev_in = []
 
+        now = time.time()
         for kev in kev_out:
             if kev.filter == KQ_FILTER_SIGNAL and kev.ident == signal.SIGCHLD:
                 child_running = False
-            if kev.filter == KQ_FILTER_VNODE and kev.ident == dirfd:
+            elif kev.filter == KQ_FILTER_VNODE and kev.ident == dirfd:
                 log.debug("Received event %d on fd %s" % 
                           (kev.fflags, kev.ident))
                 # This means the files in this dir may have changed
@@ -129,7 +130,7 @@ def kqueue_event_loop():
         if not child_running and len(files_to_run) > 0:
             log.debug("Checking for mature files")
             for fn in files_to_run:
-                if os.stat(fn).st_mtime < time.time() - options.age:
+                if os.stat(fn).st_mtime < now - options.age:
                     files_to_run.remove(fn)
                     child_running = True
                     run_command(fn)
