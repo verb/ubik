@@ -18,8 +18,8 @@
 
 VERSION = "0.01"
 DESCRIPTION='''\
-qtrigger will monitor a queue directory for changes (i.e. a file being added to
-the directory) and run an arbitrary command.'''
+qmon will monitor a queue directory for changes (i.e. a file being added to
+the directory) and run an arbitrary command on that file.'''
 
 import logging
 import optparse
@@ -38,7 +38,7 @@ options = None
 from select import kqueue, kevent, \
     KQ_FILTER_SIGNAL, KQ_FILTER_VNODE, \
     KQ_EV_ADD, KQ_EV_CLEAR, KQ_EV_DELETE, \
-    KQ_NOTE_ATTRIB, KQ_NOTE_DELETE, KQ_NOTE_WRITE
+    KQ_NOTE_ATTRIB, KQ_NOTE_DELETE, KQ_NOTE_RENAME, KQ_NOTE_WRITE
 
 def init_options():
     global options
@@ -63,12 +63,13 @@ def init_options():
     if options.loglevel:
         log.setLevel(options.loglevel)
     log.debug("Log level set to %s" % options.loglevel)
-    log.info("qtrigger configured")
+    log.info("qmon configured")
     log.info("Watching directory '%s'" % options.directory)
     log.info("Will run command '%s'" % ' '.join(options.command))
 
 def kevent_unlink(fd):
-    return kevent(fd, KQ_FILTER_VNODE, KQ_EV_ADD|KQ_EV_CLEAR, KQ_NOTE_DELETE)
+    return kevent(fd, KQ_FILTER_VNODE, KQ_EV_ADD|KQ_EV_CLEAR,
+                  KQ_NOTE_DELETE|KQ_NOTE_RENAME)
 
 def kqueue_event_loop():
     kq = kqueue()
@@ -97,44 +98,66 @@ def kqueue_event_loop():
 
         now = time.time()
         for kev in kev_out:
+            # First check if this is a SIGCHLD event, which means our child
+            # process has exited.
             if kev.filter == KQ_FILTER_SIGNAL and kev.ident == signal.SIGCHLD:
                 child_running = False
+            # Next we're concerned about a VNODE event on the directory, which
+            # could signal that the dir ents have changed
             elif kev.filter == KQ_FILTER_VNODE and kev.ident == dirfd:
                 log.debug("Received event %d on fd %s" % 
                           (kev.fflags, kev.ident))
-                # This means the files in this dir may have changed
                 log.debug("Checking for new files")
                 for A,B,files in os.walk(options.directory):
                     break
                 for fn in files:
                     if not fn in fn2fd:
                         log.debug("Found new file: %s" % fn)
-                        fn2fd[fn] = os.open(fn, os.O_RDONLY)
-                        fd2fn[fn2fd[fn]] = fn
-                        kev_in.append(kevent_unlink(fn2fd[fn]))
-                        files_to_run.append(fn)
-            elif kev.filter == KQ_FILTER_VNODE and kev.fflags == KQ_NOTE_DELETE:
+                        try:
+                            fd = os.open(fn, os.O_RDONLY)
+                        except OSError as e:
+                            log.warning("Couldn't track file %s: %s" %
+                                        (fn, str(e)))
+                        else:
+                            fn2fd[fn] = fd
+                            fd2fn[fn2fd[fn]] = fn
+                            kev_in.append(kevent_unlink(fn2fd[fn]))
+                            files_to_run.append(fn)
+            # This is a VNODE event on one of the files in the directory we're
+            # following.  If the file is removed or renamed we can stop
+            # tracking it
+            elif (kev.filter == KQ_FILTER_VNODE and
+                  kev.fflags & KQ_NOTE_DELETE|KQ_NOTE_RENAME):
                 # A file was unlinked, but not necessarily from this dir
-                log.debug("Received event unlink on fd %s" % kev.ident)
+                log.debug("Received event on fd %s" % kev.ident)
                 if kev.ident in fd2fn:
-                    if not os.path.exists(fd2fn[kev.ident]):
-                        log.debug("File %s was unlinked" % fd2fn[kev.ident])
+                    fn = fd2fn[kev.ident]
+                    if not os.path.exists(fn):
+                        log.debug("File %s was removed" % fn)
                         os.close(kev.ident)     # Also removes from kqueue
-                        del fn2fd[fd2fn[kev.ident]]
+                        if fn in files_to_run:
+                            files_to_run.remove(fn)
+                        del fn2fd[fn]
                         del fd2fn[kev.ident]
                 else:
                     log.warning("Got unlink event on untracked file.  Guh.")
             log.debug("File list is: " + repr(fd2fn))
 
         # See if any of these files are old enough to process
-        if not child_running and len(files_to_run) > 0:
+        # TODO: stop stating the files and use kevent to keep track of when it
+        # was last updated
+        if len(kev_out) == 0 and not child_running and len(files_to_run) > 0:
             log.debug("Checking for mature files")
+            log.debug("Run list is: " + repr(files_to_run))
             for fn in files_to_run:
-                if os.stat(fn).st_mtime < now - options.age:
-                    files_to_run.remove(fn)
-                    child_running = True
-                    run_command(fn)
-                    break
+                try:
+                    if os.stat(fn).st_mtime < now - options.age:
+                        files_to_run.remove(fn)
+                        child_running = True
+                        run_command(fn)
+                        break
+                except OSError as e:
+                    log.warning("Problem finding %s: %s" % (fn, str(e)))
 
 def run_command(filename):
     log.info("Running command '%s %s'" % (options.command, filename))
