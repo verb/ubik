@@ -16,12 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+NAME = "qmon"
 VERSION = "0.01"
 DESCRIPTION='''\
 qmon will monitor a queue directory for changes (i.e. a file being added to
 the directory) and run an arbitrary command on that file.'''
 
-import logging
+import logging, logging.handlers
 import optparse
 import os, os.path
 import select
@@ -30,9 +31,7 @@ import subprocess
 import sys
 import time
 
-logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s")
-
-log     = logging.getLogger()
+log     = None
 options = None
 
 from select import kqueue, kevent, \
@@ -40,17 +39,48 @@ from select import kqueue, kevent, \
     KQ_EV_ADD, KQ_EV_CLEAR, KQ_EV_DELETE, \
     KQ_NOTE_ATTRIB, KQ_NOTE_DELETE, KQ_NOTE_RENAME, KQ_NOTE_WRITE
 
+def init_logging():
+    global log
+
+    log = logging.getLogger(NAME)
+    if options.loglevel:
+        log.setLevel(options.loglevel)
+
+    fmt = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
+    if options.foreground or not (options.logfile or options.syslog):
+        h = logging.StreamHandler()
+        h.setFormatter(fmt)
+        log.addHandler(h)
+    if options.logfile:
+        h = logging.FileHandler(options.logfile)
+        h.setFormatter(fmt)
+        log.addHandler(h)
+    if options.syslog:
+        h = logging.handlers.SysLogHandler('/dev/log','user')
+        h.setFormatter(fmt)
+        log.addHandler(h)
+
+    log.debug("Log level set to %s" % options.loglevel)
+    log.info(NAME + " configured")
+    log.info("Watching directory '%s'" % options.directory)
+    log.info("Will run command '%s'" % ' '.join(options.command))
+
 def init_options():
     global options
 
     parser = optparse.OptionParser(version=VERSION, description=DESCRIPTION,
         usage="%prog [options] -- directory trigger")
-    parser.add_option("-a", "--age", action="store", type="int",
-                      dest="age", default=5,
+    parser.add_option("--age", action="store", type="int", default=5,
                       help="Age of file in seconds before it will be processed")
     parser.add_option("-d", "--debug", action="store_const", 
                       dest="loglevel", const=logging.DEBUG,
                       help="Enable debugging logging")
+    parser.add_option("-n", "--foreground", action="store_true", 
+                      help="Stay in the foreground and log to stdout")
+    parser.add_option("--logfile", action="store",
+                      help="Log %s messages to LOGFILE" % NAME)
+    parser.add_option("--syslog", action="store_true", 
+                      help="Log to syslog")
     parser.add_option("-v", "--verbose", action="store_const", 
                       dest="loglevel", const=logging.INFO,
                       help="Enable verbose logging")
@@ -59,13 +89,6 @@ def init_options():
     (options, trigger) = parser.parse_args()
     options.directory = trigger.pop(0)
     options.command = trigger.pop(0)
-
-    if options.loglevel:
-        log.setLevel(options.loglevel)
-    log.debug("Log level set to %s" % options.loglevel)
-    log.info("qmon configured")
-    log.info("Watching directory '%s'" % options.directory)
-    log.info("Will run command '%s'" % ' '.join(options.command))
 
 def kevent_unlink(fd):
     return kevent(fd, KQ_FILTER_VNODE, KQ_EV_ADD|KQ_EV_CLEAR,
@@ -166,6 +189,7 @@ def run_command(filename):
 
 def main():
     init_options()
+    init_logging()
 
     # Enter event loop
     if select.kqueue:
