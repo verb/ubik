@@ -14,9 +14,17 @@ class ConfigHat(BaseHat):
             return True
         return False
 
-    @staticmethod
-    def help(args):
-        pass
+    def help(self, out):
+        '''Print help message to specified file object
+
+        This method is called on an instance so that it can give help specific
+        to the arguments that have been parsed by __init__()
+        '''
+        print >>out, "Usage: config"
+        print >>out
 
     def __init__(self, args):
+        pass
+
+    def run(self):
         pass

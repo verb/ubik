@@ -52,6 +52,7 @@ def main(args=None):
     # Try to figure out what hat we're using here
     hatstr = args.pop(0)
     hat = ubik.hats.hatter(hatstr, args)
+    hat.run()
 
 if __name__ == '__main__':
     main()
