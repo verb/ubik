@@ -16,6 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+### READ THIS STATUS!!
+# this is an incomplete program.  It doesn't actually work because an unrelated
+# complication in my project caused me to stop working on it.
+###
+
 NAME = "qmon"
 VERSION = "0.01"
 DESCRIPTION='''\
@@ -72,16 +77,16 @@ def init_options():
         usage="%prog [options] -- directory trigger")
     parser.add_option("--age", action="store", type="int", default=5,
                       help="Age of file in seconds before it will be processed")
-    parser.add_option("-d", "--debug", action="store_const", 
+    parser.add_option("-d", "--debug", action="store_const",
                       dest="loglevel", const=logging.DEBUG,
                       help="Enable debugging logging")
-    parser.add_option("-n", "--foreground", action="store_true", 
+    parser.add_option("-n", "--foreground", action="store_true",
                       help="Stay in the foreground and log to stdout")
     parser.add_option("--logfile", action="store",
                       help="Log %s messages to LOGFILE" % NAME)
-    parser.add_option("--syslog", action="store_true", 
+    parser.add_option("--syslog", action="store_true",
                       help="Log to syslog")
-    parser.add_option("-v", "--verbose", action="store_const", 
+    parser.add_option("-v", "--verbose", action="store_const",
                       dest="loglevel", const=logging.INFO,
                       help="Enable verbose logging")
 
@@ -99,7 +104,7 @@ def kqueue_event_loop():
     dirfd = os.open(options.directory, os.O_RDONLY)
     os.chdir(options.directory)
 
-    kev_in = [kevent(dirfd, KQ_FILTER_VNODE, KQ_EV_ADD|KQ_EV_CLEAR, 
+    kev_in = [kevent(dirfd, KQ_FILTER_VNODE, KQ_EV_ADD|KQ_EV_CLEAR,
                      KQ_NOTE_WRITE|KQ_NOTE_ATTRIB),]
     # Touching the directory generates an initial event so that the
     # event loop will scan for new files
@@ -128,7 +133,7 @@ def kqueue_event_loop():
             # Next we're concerned about a VNODE event on the directory, which
             # could signal that the dir ents have changed
             elif kev.filter == KQ_FILTER_VNODE and kev.ident == dirfd:
-                log.debug("Received event %d on fd %s" % 
+                log.debug("Received event %d on fd %s" %
                           (kev.fflags, kev.ident))
                 log.debug("Checking for new files")
                 for A,B,files in os.walk(options.directory):
