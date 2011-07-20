@@ -4,6 +4,9 @@ import logging
 log = logging.getLogger('ubik.hats')
 log.debug("Logging initialized")
 
+class HatException(Exception):
+    pass
+
 from .config import ConfigHat
 from .helper import HelperHat
 

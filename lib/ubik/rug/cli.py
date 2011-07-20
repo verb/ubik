@@ -9,6 +9,8 @@ avoid collisions.  Also, NEW HAT!'''
 
 import logging
 import optparse
+import os
+import sys
 
 import ubik.hats
 
@@ -17,6 +19,7 @@ CONFFILE="~/.rug/rug.ini"
 VERSION="0.0"
 
 options = None
+log = logging.getLogger('rug.cli')
 
 def init_cli(args=None):
     global options
@@ -36,6 +39,8 @@ def init_cli(args=None):
     p.disable_interspersed_args()
     (options, args) = p.parse_args(args=args)
 
+    if 'DEBUG' in os.environ:
+        options.debug = True
     if options.debug:
         log.setLevel(logging.DEBUG)
     elif options.verbose:
@@ -52,7 +57,12 @@ def main(args=None):
     # Try to figure out what hat we're using here
     hatstr = args.pop(0)
     hat = ubik.hats.hatter(hatstr, args)
-    hat.run()
+    try:
+        hat.run()
+    except ubik.hats.HatException as e:
+        print >>sys.stderr, "ERROR:", str(e)
+        if options.debug:
+            raise e
 
 if __name__ == '__main__':
     main()
