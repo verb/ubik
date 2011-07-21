@@ -14,4 +14,3 @@ logging.basicConfig(level=loglevel)
 
 log = logging.getLogger('ubik')
 log.debug("Logging initialized")
-

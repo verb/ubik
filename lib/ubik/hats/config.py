@@ -7,8 +7,6 @@ import ubik.config
 from ubik.hats import HatException
 from ubik.hats.base import BaseHat
 
-CONFIG_FILE = "~/.rug/rug.ini"
-
 log = logging.getLogger('ubik.hats.config')
 
 class ConfigHat(BaseHat):
@@ -30,21 +28,28 @@ class ConfigHat(BaseHat):
         This method is called on an instance so that it can give help specific
         to the arguments that have been parsed by __init__()
         '''
-        print >>out, "Usage: config"
+        print >>out, "Usage: config [ option [ value ] ]"
         print >>out
+        print >>out, "Without arguments, dump the entire config."
+        print >>out
+        print >>out, "With arguments, display or set config options."
 
-    def __init__(self, args):
-        log.debug("Initialize args %s" % repr(args))
+    def __init__(self, args, config=None, options=None):
+        super(ConfigHat, self).__init__(args, config, options)
         self.args = args
 
     def run(self):
-        self._read_config()
-        if len(self.args) == 1:
+        self.prerun()
+        if len(self.args) == 0:
+            self.config.write(self.output)
+        elif len(self.args) == 1:
             value = self._get(*self.args)
             if value:
                 print >>self.output, value
         elif len(self.args) == 2:
             self._set(*self.args)
+            if self.config_file:
+                self.config.write(self.config_file)
         else:
             raise HatException("Invalid number of arguments to config")
 
@@ -65,12 +70,12 @@ class ConfigHat(BaseHat):
         return value
 
     def _set(self, key, value):
-        pass
+        try:
+            section, option = key.split('.', 2)
+        except ValueError:
+            section = 'DEFAULT'
+            option = key
 
-    def _read_config(self):
-        if self.options:
-            cf = self.options.conf
-        else:
-            cf = CONFIG_FILE
-        self.config = ubik.config.read(cf)
-        self.cf_path = cf
+        if not section == 'DEFAULT' and not self.config.has_section(section):
+            self.config.add_section(section)
+        self.config.set(section, option, value)

@@ -31,14 +31,14 @@ class HelperHat(BaseHat):
         print >>out, "Use without arguments to get a command list"
         print >>out
 
-    def __init__(self, args):
+    def __init__(self, args, config=None, options=None):
         '''Figure out what we're helping with
 
         Helper is a unique in that it has to interact with other hats to do its
         job.  For that reason, this module re-invokes hats.hatter() to figure
         out what module needs helping.
         '''
-        log.debug("Helper initializing %s" % str(args))
+        super(HelperHat, self).__init__(args, config, options)
         if len(args) > 0:
             self.mystery = ubik.hats.hatter(args.pop(0), args)
             log.debug("Helper going to help with hat %s" % self.mystery.name)
@@ -47,6 +47,7 @@ class HelperHat(BaseHat):
 
     def run(self):
         '''Prints help messages to the output file object'''
+        self.prerun()
         if self.mystery:
             self._print_hat_help(self.output, self.mystery)
         else:

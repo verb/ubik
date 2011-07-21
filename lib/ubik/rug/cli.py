@@ -12,23 +12,23 @@ import optparse
 import os
 import sys
 
+import ubik.config
+import ubik.defaults
 import ubik.hats
 
-# Program Defaults
-CONFFILE="~/.rug/rug.ini"
-VERSION="0.0"
-
+config = ubik.config.UbikConfig()
 options = None
 log = logging.getLogger('rug.cli')
 
 def init_cli(args=None):
-    global options
+    global config, options
     p = optparse.OptionParser(usage='%prog [global_options] THING HAT [ARG ...]',
-                              version='%prog ' + VERSION,
+                              version='%prog ' + ubik.defaults.VERSION,
                               description=DESCRIPTION,
                               epilog='Use the help sub-command for more '
                                      'details.')
-    p.add_option('--conf', '-c', metavar='FILE', default=CONFFILE,
+    p.add_option('--conf', '-c', metavar='FILE',
+                 default=ubik.defaults.CONFIG_FILE,
                  help='Use config FILE instead of %default')
     p.add_option('--debug', '-d', action='store_true',
                  help='Enable debug logging')
@@ -46,6 +46,8 @@ def init_cli(args=None):
     elif options.verbose:
         log.setLevel(logging.INFO)
 
+    config.read(options.conf)
+
     if len(args) == 0:
         args = ['help',]
 
@@ -56,7 +58,7 @@ def main(args=None):
 
     # Try to figure out what hat we're using here
     hatstr = args.pop(0)
-    hat = ubik.hats.hatter(hatstr, args)
+    hat = ubik.hats.hatter(hatstr, args, config, options)
     try:
         hat.run()
     except ubik.hats.HatException as e:

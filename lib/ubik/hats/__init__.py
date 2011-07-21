@@ -15,7 +15,7 @@ ALL_HATS = (
     ConfigHat,
     )
 
-def hatter(hat_str, args):
+def hatter(hat_str, args, config=None, options=None):
     '''Given an arbitrary string, attempt to figure out which hat we should
     wear, then initialize and return an object instance.'''
 
@@ -23,7 +23,7 @@ def hatter(hat_str, args):
     for hat in ALL_HATS:
         if hat.areyou(hat_str):
             log.debug("%s matched hat %s" % (hat_str, hat.__name__))
-            return hat(args)
+            return hat(args, config, options)
 
     # Could not find a hat
     return None
