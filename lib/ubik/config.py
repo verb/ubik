@@ -14,8 +14,22 @@ def read(files):
 
 # Note: SafeConfigParser is old-style
 class UbikConfig(ConfigParser.SafeConfigParser):
-    def read(self, files):
+    '''
+    Basically just a config parser, but UbikConfig also keeps a system-wide
+    config that is kept separate and can be used for defaults.
+
+    The advantage of keeping it separate is that it the config defaults
+    won't be written to the users local config upon change.
+    '''
+    def read(self, files, system_files=()):
         'Just expands paths and the calls the real config parser reader'
+        # System-level config
+        self.global_config = ConfigParser.SafeConfigParser()
+        paths = [os.path.expanduser(f) for f in system_files]
+        paths_read = self.global_config.read(paths)
+        log.debug("Read system config files %s" % repr(paths_read))
+
+        # User-level config
         if isinstance(files,str):
             files = (files,)
         paths = [os.path.expanduser(f) for f in files]

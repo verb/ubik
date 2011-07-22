@@ -46,7 +46,11 @@ def init_cli(args=None):
     elif options.verbose:
         log.setLevel(logging.INFO)
 
-    config.read(options.conf)
+    if 'RUG_GLOBAL_CONFIG' in os.environ:
+        global_cf = os.environ['RUG_GLOBAL_CONFIG']
+    else:
+        global_cf = ubik.defaults.GLOBAL_CONFIG_FILE
+    config.read(options.conf, global_cf)
 
     if len(args) == 0:
         args = ['help',]
