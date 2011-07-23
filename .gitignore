@@ -1,4 +1,4 @@
 *.swp
 *.pyc
 *.wpu
-test
+tests/out

@@ -10,7 +10,27 @@ class CacheException(Exception):
     pass
 
 class UbikPackageCache(object):
-    "Cache specifically for software packages, such as RPM & DEB"
+    """Cache specifically for software packages, such as RPM & DEB
+
+    >>> u=UbikPackageCache('tests/out/cache')
+    >>> u.add('tests/testpkg_1.0_all.deb')
+
+    >>> u.get(name='testpkg')
+    'tests/out/cache/deb/testpkg_1.0_all.deb'
+    >>> u.get(name='testpkg', version='1.0')
+    'tests/out/cache/deb/testpkg_1.0_all.deb'
+    >>> u.get(name='testpkg', version='1.0', type='deb')
+    'tests/out/cache/deb/testpkg_1.0_all.deb'
+    >>> u.get(name='testpkg', version='1.0', type='deb', arch='all')
+    'tests/out/cache/deb/testpkg_1.0_all.deb'
+    >>> u.get()
+    Traceback (most recent call last):
+       ...
+    CacheException: Missing filters for get
+
+    >>> u.prune()
+
+    """
     def __init__(self, cache_dir):
         cache_dir = os.path.expanduser(cache_dir)
         self.cache_dir = cache_dir
@@ -21,6 +41,7 @@ class UbikPackageCache(object):
 
         dbfile=os.path.join(cache_dir, 'index.db')
         self.conn = sqlite3.connect(dbfile)
+        self.conn.row_factory = sqlite3.Row
 
         c = self.conn.cursor()
         c.execute('CREATE TABLE IF NOT EXISTS packages ('
@@ -30,10 +51,18 @@ class UbikPackageCache(object):
                     'type TEXT,'
                     'arch TEXT,'
                     'filename TEXT NOT NULL,'
-                    'added TEXT DEFAULT CURRENT_TIMESTAMP'
+                    'added TEXT DEFAULT CURRENT_TIMESTAMP,'
+                    'UNIQUE(name, version, type, arch)'
                   ');')
 
-    def _inspect(self, filepath, pkg_type=None):
+    @staticmethod
+    def _inspect(filepath, pkg_type=None):
+        """Tries to guess the type of package located at filepath
+
+        >>> UbikPackageCache._inspect('tests/testpkg_1.0_all.deb')
+        {'arch': 'all', 'version': '1.0', 'type': 'deb', 'name': 'testpkg'}
+
+        """
         if not pkg_type:
             # Try to guess the package type
             mimetype = mimetypes.guess_type(filepath)[0]
@@ -55,8 +84,13 @@ class UbikPackageCache(object):
         return pkg
 
     def add(self, filepath, **kwargs):
+        """Adds a package to the cache, copying the file to cache_dir
+
+        It is not an error to add a package that already exists.  That package
+        is simply overwritten.
+
+        """
         filename = os.path.basename(filepath)
-        c = self.conn.cursor()
         pkg = {'filename': filename}
         for v in 'name', 'version', 'type', 'arch':
             pkg[v] = kwargs.get(v)
@@ -68,18 +102,38 @@ class UbikPackageCache(object):
                 if not pkg[f]:
                     pkg[f] = guess[f]
 
-        c.execute('INSERT INTO packages (name, version, type, arch, filename) '
-                  'VALUES (:name, :version, :type, :arch, :filename);', pkg)
-        self.conn.commit()
+        with self.conn:
+            self.conn.execute('INSERT INTO packages '
+                              '(name, version, type, arch, filename) VALUES '
+                              '(:name, :version, :type, :arch, :filename);',
+                              pkg)
 
         cache_dir_type = os.path.join(self.cache_dir, pkg['type'])
         if not os.path.exists(cache_dir_type):
             os.mkdir(cache_dir_type)
         shutil.copy(filepath, cache_dir_type)
 
+    def get(self, **kwargs):
+        """Look up a package and return its path"""
+        args = ('name', 'version', 'type', 'arch')
+        # Create a dictionary from kwargs of only the args we want
+        where = dict(zip([a for a in args if a in kwargs],
+                         [kwargs[a] for a in args if a in kwargs]))
+        if len(where) == 0:
+            raise CacheException("Missing filters for get")
+
+        c = self.conn.execute('SELECT type,filename FROM packages WHERE ' +
+                              ' = ? AND '.join(where.keys()) + ' = ?;',
+                              where.values())
+        r = c.fetchone()
+        cache_path = str(os.path.join(r['type'], r['filename']))
+        return os.path.relpath(os.path.join(self.cache_dir, cache_path))
+
     def prune(self):
-        c = self.conn.cursor()
-        c.execute('VACUUM;')
+        self.conn.execute('VACUUM;')
 
 if __name__ == '__main__':
-    pass
+    import doctest
+    if os.path.exists('tests/out/cache'):
+        shutil.rmtree('tests/out/cache')
+    doctest.testmod(verbose=False)
