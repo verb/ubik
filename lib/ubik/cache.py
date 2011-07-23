@@ -1,10 +1,13 @@
 "Utilities for caching files in directory"
 
+import logging
 import mimetypes
 import os, os.path
 import sqlite3
 import shutil
 import subprocess
+
+log = logging.getLogger('ubik.cache')
 
 class CacheException(Exception):
     pass
@@ -128,6 +131,7 @@ class UbikPackageCache(object):
                 if not pkg[f]:
                     pkg[f] = guess[f]
 
+        log.debug('Adding package %s to cache' % filename)
         with self.conn:
             self.conn.execute('INSERT INTO packages '
                               '(name, version, type, arch, filename) VALUES '
@@ -175,7 +179,23 @@ class UbikPackageCache(object):
 
         return results
 
-    def prune(self):
+    # TODO: Deleting packages needs to be tested
+    def prune(self, keep_per_version=None):
+        if keep_per_version:
+            pkg_groups = self.conn.execute('SELECT DISTINCT name,arch,type '
+                                           'FROM packages;')
+            for pkg_group in pkg_groups:
+                values = dict(pkg_group)
+                values['keep'] = keep_per_version
+                pkgs = self.conn.execute('SELECT filename '
+                                         'FROM packages '
+                                         'WHERE name = :name AND arch = :arch '
+                                               'AND type = :type '
+                                         'ORDER BY added DESC '
+                                         'LIMIT -1 OFFSET :keep;',
+                                         values)
+                for pkg in pkgs:
+                    self.remove(pkg['filename'])
         self.conn.execute('VACUUM;')
 
     def remove(self, filename):
@@ -184,6 +204,7 @@ class UbikPackageCache(object):
                               'WHERE filename = ?', (filename,))
         r = c.fetchone()
 
+        log.debug('Removing package %s from cache' % filename)
         with self.conn:
             c.execute('DELETE FROM packages WHERE filename = ?;', (filename,))
         os.unlink(os.path.join(self.cache_dir, r['type'], filename))
