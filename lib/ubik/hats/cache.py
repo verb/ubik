@@ -43,7 +43,7 @@ class CacheHat(BaseHat):
             cache_dir = os.path.expanduser(ubik.defaults.CACHE_DIR)
         self.cache = ubik.cache.UbikPackageCache(cache_dir)
 
-    def runhat(self):
+    def run(self):
         if len(self.args) == 0:
             self.args.insert(0, 'ls')
 

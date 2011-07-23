@@ -27,15 +27,6 @@ class BaseHat(object):
             self.config = ubik.config.UbikConfig()
             self.config.read(self.config_file, ubik.defaults.GLOBAL_CONFIG_FILE)
 
-    def prerun(self):
-        '''
-        The prerun function of the base class does some common set up. There
-        are a few things that shouldn't be initialized until immediately prior
-        to run time because initializing a hat doesn't necessarily imply that
-        it will ever be run.  (e.g. HelperHat creates hats but never runs them)
-        '''
-        pass
-
     def run(self):
         self.runhat()
 

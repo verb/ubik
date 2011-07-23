@@ -39,7 +39,6 @@ class ConfigHat(BaseHat):
         self.args = args
 
     def run(self):
-        self.prerun()
         if len(self.args) == 0:
             self.config.write(self.output)
         elif len(self.args) == 1:

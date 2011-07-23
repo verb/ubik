@@ -48,7 +48,6 @@ class HelperHat(BaseHat):
 
     def run(self):
         '''Prints help messages to the output file object'''
-        self.prerun()
         if self.mystery:
             self._print_hat_help(self.output, self.mystery)
         else:
