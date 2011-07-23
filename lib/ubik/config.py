@@ -12,6 +12,11 @@ def read(files):
     config = UbikConfig()
     return config
 
+class Error(ConfigParser.Error):
+    pass
+class NoOptionError(Error):
+    pass
+
 # Note: SafeConfigParser is old-style
 class UbikConfig(ConfigParser.SafeConfigParser):
     '''
@@ -24,6 +29,8 @@ class UbikConfig(ConfigParser.SafeConfigParser):
     def read(self, files, system_files=()):
         'Just expands paths and the calls the real config parser reader'
         # System-level config
+        if isinstance(system_files,str):
+            system_files = (system_files,)
         self.global_config = ConfigParser.SafeConfigParser()
         paths = [os.path.expanduser(f) for f in system_files]
         paths_read = self.global_config.read(paths)
@@ -42,3 +49,13 @@ class UbikConfig(ConfigParser.SafeConfigParser):
                 ConfigParser.SafeConfigParser.write(self, cf)
         else:
             ConfigParser.SafeConfigParser.write(self, fileish)
+
+    def get(self, *args):
+        try:
+            ConfigParser.SafeConfigParser.get(self, *args)
+        except ConfigParser.Error as e:
+            if ((isinstance(e, ConfigParser.NoOptionError) or
+                 isinstance(e, ConfigParser.NoSectionError)) and
+                self.global_config.has_option(*args)):
+                return self.global_config.get(*args)
+            raise e

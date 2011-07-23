@@ -40,7 +40,8 @@ class HelperHat(BaseHat):
         '''
         super(HelperHat, self).__init__(args, config, options)
         if len(args) > 0:
-            self.mystery = ubik.hats.hatter(args.pop(0), args)
+            self.mystery = ubik.hats.hatter(args.pop(0), args, self.config,
+                                            self.options)
             log.debug("Helper going to help with hat %s" % self.mystery.name)
         else:
             self.mystery = None

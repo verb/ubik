@@ -19,6 +19,13 @@ class BaseHat(object):
         log.debug("Initialize args %s" % repr(args))
         self.config = config
         self.options = options
+        if self.options:
+            self.config_file = self.options.conf
+        else:
+            self.config_file = ubik.defaults.CONFIG_FILE
+        if not self.config:
+            self.config = ubik.config.UbikConfig()
+            self.config.read(self.config_file, ubik.defaults.GLOBAL_CONFIG_FILE)
 
     def prerun(self):
         '''
@@ -27,13 +34,10 @@ class BaseHat(object):
         to run time because initializing a hat doesn't necessarily imply that
         it will ever be run.  (e.g. HelperHat creates hats but never runs them)
         '''
-        if self.options:
-            self.config_file = self.options.conf
-        else:
-            self.config_file = ubik.defaults.CONFIG_FILE
-        if not self.config:
-            self.config = ubik.config.UbikConfig()
-            self.config.read(self.config_file)
+        pass
+
+    def run(self):
+        self.runhat()
 
     def set_options(self, options):
         'Register command line options with this hat'
