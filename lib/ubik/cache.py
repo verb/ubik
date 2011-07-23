@@ -28,6 +28,32 @@ class UbikPackageCache(object):
        ...
     CacheException: Missing filters for get
 
+    >>> from pprint import pprint
+    >>> pprint(u.list())
+    [{'added': ...,
+      'arch': u'all',
+      'filename': u'testpkg_1.0_all.deb',
+      'name': u'testpkg',
+      'type': u'deb',
+      'version': u'1.0'}]
+    >>> pprint(u.list('testpkg_1.*'))
+    [{'added': ...,
+      'arch': u'all',
+      'filename': u'testpkg_1.0_all.deb',
+      'name': u'testpkg',
+      'type': u'deb',
+      'version': u'1.0'}]
+    >>> pprint(u.list(name='testpkg', arch='all', version='1.0', type='deb'))
+    [{'added': ...,
+      'arch': u'all',
+      'filename': u'testpkg_1.0_all.deb',
+      'name': u'testpkg',
+      'type': u'deb',
+      'version': u'1.0'}]
+
+    >>> u.remove('testpkg_1.0_all.deb')
+    >>> u.list()
+    []
     >>> u.prune()
 
     """
@@ -50,7 +76,7 @@ class UbikPackageCache(object):
                     'version TEXT,'
                     'type TEXT,'
                     'arch TEXT,'
-                    'filename TEXT NOT NULL,'
+                    'filename TEXT UNIQUE NOT NULL,'
                     'added TEXT DEFAULT CURRENT_TIMESTAMP,'
                     'UNIQUE(name, version, type, arch)'
                   ');')
@@ -126,14 +152,44 @@ class UbikPackageCache(object):
                               ' = ? AND '.join(where.keys()) + ' = ?;',
                               where.values())
         r = c.fetchone()
-        cache_path = str(os.path.join(r['type'], r['filename']))
-        return os.path.relpath(os.path.join(self.cache_dir, cache_path))
+        if r:
+            cache_path = str(os.path.join(r['type'], r['filename']))
+            return os.path.relpath(os.path.join(self.cache_dir, cache_path))
+        return None
+
+    def list(self, filename='*', **kwargs):
+        '''Return a list of dictionaries describing requested cache entries'''
+        args = ('name', 'version', 'type', 'arch')
+        where = dict(zip([a for a in args if a in kwargs],
+                         [kwargs[a] for a in args if a in kwargs]))
+        where['filename'] = filename
+
+        c = self.conn.execute('SELECT filename,name,version,type,arch,added '
+                              'FROM packages WHERE ' +
+                              ' GLOB ? AND '.join(where.keys()) + ' GLOB ?;',
+                              where.values())
+
+        results = []
+        for row in c:
+            results.append(dict(row))
+
+        return results
 
     def prune(self):
         self.conn.execute('VACUUM;')
+
+    def remove(self, filename):
+        '''Remove a particular filename from the cache'''
+        c = self.conn.execute('SELECT type FROM packages '
+                              'WHERE filename = ?', (filename,))
+        r = c.fetchone()
+
+        with self.conn:
+            c.execute('DELETE FROM packages WHERE filename = ?;', (filename,))
+        os.unlink(os.path.join(self.cache_dir, r['type'], filename))
 
 if __name__ == '__main__':
     import doctest
     if os.path.exists('tests/out/cache'):
         shutil.rmtree('tests/out/cache')
-    doctest.testmod(verbose=False)
+    doctest.testmod(optionflags=doctest.ELLIPSIS, verbose=False)
