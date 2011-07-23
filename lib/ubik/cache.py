@@ -74,12 +74,11 @@ class UbikPackageCache(object):
 
         c = self.conn.cursor()
         c.execute('CREATE TABLE IF NOT EXISTS packages ('
-                    'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                    'filename TEXT PRIMARY KEY,'
                     'name TEXT NOT NULL,'
                     'version TEXT,'
                     'type TEXT,'
                     'arch TEXT,'
-                    'filename TEXT UNIQUE NOT NULL,'
                     'added TEXT DEFAULT CURRENT_TIMESTAMP,'
                     'UNIQUE(name, version, type, arch)'
                   ');')
@@ -181,6 +180,18 @@ class UbikPackageCache(object):
 
     # TODO: Deleting packages needs to be tested
     def prune(self, keep_per_version=None):
+        "Clean up the cache in various ways"
+
+        # This bit validates that all of the filenames still exist
+        pkgs = self.conn.execute('SELECT filename,type FROM packages;')
+        for pkg in pkgs:
+            if not os.path.exists(os.path.join(self.cache_dir, pkg['type'],
+                                               pkg['filename'])):
+                log.debug("Package %s missing from cache.  Removing." %
+                          pkg['filename'])
+                self.remove(pkg['filename'], pkg['type'])
+
+        # This bit removes old package versions
         if keep_per_version:
             pkg_groups = self.conn.execute('SELECT DISTINCT name,arch,type '
                                            'FROM packages;')
@@ -198,16 +209,23 @@ class UbikPackageCache(object):
                     self.remove(pkg['filename'])
         self.conn.execute('VACUUM;')
 
-    def remove(self, filename):
+    def remove(self, filename, pkg_type=None):
         '''Remove a particular filename from the cache'''
-        c = self.conn.execute('SELECT type FROM packages '
-                              'WHERE filename = ?', (filename,))
-        r = c.fetchone()
+        if not pkg_type:
+            c = self.conn.execute('SELECT type FROM packages '
+                                  'WHERE filename = ?', (filename,))
+            r = c.fetchone()
+            if not r:
+                raise CacheException('Filename %s not in the cache' % filename)
+            pkg_type = r['type']
 
         log.debug('Removing package %s from cache' % filename)
         with self.conn:
-            c.execute('DELETE FROM packages WHERE filename = ?;', (filename,))
-        os.unlink(os.path.join(self.cache_dir, r['type'], filename))
+            self.conn.execute('DELETE FROM packages WHERE filename = ?;',
+                              (filename,))
+        filepath = os.path.join(self.cache_dir, pkg_type, filename)
+        if os.path.exists(filepath):
+            os.unlink(filepath)
 
 if __name__ == '__main__':
     import doctest

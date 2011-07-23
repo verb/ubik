@@ -63,12 +63,15 @@ def main(args=None):
     # Try to figure out what hat we're using here
     hatstr = args.pop(0)
     hat = ubik.hats.hatter(hatstr, args, config, options)
-    try:
-        hat.run()
-    except ubik.hats.HatException as e:
-        print >>sys.stderr, "ERROR:", str(e)
-        if options.debug:
-            raise e
+    if hat:
+        try:
+            hat.run()
+        except ubik.hats.HatException as e:
+            print >>sys.stderr, "ERROR:", str(e)
+            if options.debug:
+                raise e
+    else:
+        print >>sys.stderr, "ERROR: No such command"
 
 if __name__ == '__main__':
     main()
