@@ -58,4 +58,4 @@ class UbikConfig(ConfigParser.SafeConfigParser):
                  isinstance(e, ConfigParser.NoSectionError)) and
                 self.global_config.has_option(*args)):
                 return self.global_config.get(*args)
-            raise e
+            raise NoOptionError("Option %s.%s not configured" % args)

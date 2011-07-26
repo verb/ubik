@@ -22,18 +22,6 @@ class ConfigHat(BaseHat):
             return True
         return False
 
-    def help(self, out):
-        '''Print help message to specified file object
-
-        This method is called on an instance so that it can give help specific
-        to the arguments that have been parsed by __init__()
-        '''
-        print >>out, "Usage: config [ option [ value ] ]"
-        print >>out
-        print >>out, "Without arguments, dump the entire config."
-        print >>out
-        print >>out, "With arguments, display or set config options."
-
     def __init__(self, args, config=None, options=None):
         super(ConfigHat, self).__init__(args, config, options)
         self.args = args
@@ -53,6 +41,11 @@ class ConfigHat(BaseHat):
             raise HatException("Invalid number of arguments to config")
 
     def _get(self, key):
+        '''config [ OPTION ]
+
+        Print the configured value for OPTION.  If OPTION is omitted, dump the
+        entire config.
+        '''
         try:
             section, option = key.split('.', 2)
         except ValueError:
@@ -69,6 +62,10 @@ class ConfigHat(BaseHat):
         return value
 
     def _set(self, key, value):
+        '''config OPTION VALUE
+
+        Set configuration OPTION to VALUE in the local user config.
+        '''
         try:
             section, option = key.split('.', 2)
         except ValueError:
@@ -78,3 +75,6 @@ class ConfigHat(BaseHat):
         if not section == 'DEFAULT' and not self.config.has_section(section):
             self.config.add_section(section)
         self.config.set(section, option, value)
+
+    command_list = ( _get, _set )
+
