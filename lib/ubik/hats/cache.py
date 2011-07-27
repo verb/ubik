@@ -27,10 +27,7 @@ class CacheHat(BaseHat):
         super(CacheHat, self).__init__(args, config, options)
         self.args = args
 
-        try:
-            cache_dir = os.path.expanduser(self.config.get('cache','dir'))
-        except ubik.config.Error:
-            cache_dir = os.path.expanduser(ubik.defaults.CACHE_DIR)
+        cache_dir = os.path.expanduser(self.config.get('cache','dir'))
         self.cache = ubik.cache.UbikPackageCache(cache_dir)
 
     def run(self):

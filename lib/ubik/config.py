@@ -1,9 +1,10 @@
 'Utility functions to read/write config for all ubik modules.'
 
+import ConfigParser
 import logging
 import os.path
 
-import ConfigParser
+import ubik.defaults
 
 log = logging.getLogger('ubik.config')
 
@@ -50,12 +51,15 @@ class UbikConfig(ConfigParser.SafeConfigParser):
         else:
             ConfigParser.SafeConfigParser.write(self, fileish)
 
-    def get(self, *args):
-        try:
-            ConfigParser.SafeConfigParser.get(self, *args)
-        except ConfigParser.Error as e:
-            if ((isinstance(e, ConfigParser.NoOptionError) or
-                 isinstance(e, ConfigParser.NoSectionError)) and
-                self.global_config.has_option(*args)):
-                return self.global_config.get(*args)
-            raise NoOptionError("Option %s.%s not configured" % args)
+    def get(self, section, option):
+        if ConfigParser.SafeConfigParser.has_option(self, section, option):
+            return ConfigParser.SafeConfigParser.get(self, *args)
+        elif self.global_config.has_option(section, option):
+            return self.global_config.get(section, option)
+        else:
+            secopt = '.'.join((section, option))
+            if secopt in ubik.defaults.config_defaults:
+                return ubik.defaults.config_defaults[secopt]
+            else:
+                raise NoOptionError("Option %s not configured" % secopt)
+
