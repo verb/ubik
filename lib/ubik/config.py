@@ -18,17 +18,27 @@ class Error(ConfigParser.Error):
 class NoOptionError(Error):
     pass
 
-# Note: SafeConfigParser is old-style
+# Note: SafeConfigParser is classic
 class UbikConfig(ConfigParser.SafeConfigParser):
     '''
-    Basically just a config parser, but UbikConfig also keeps a system-wide
-    config that is kept separate and can be used for defaults.
+    ConfigParser with ubik-specific extensions
 
-    The advantage of keeping it separate is that it the config defaults
-    won't be written to the users local config upon change.
+    Basically just a config parser, but UbikConfig does some amount of file
+    and/or section-name inheritance.  Some config files can be read as "system"
+    or "global" config files.  These "system" config files will be treated the
+    same as if they had been read as a standard config, but their values won't
+    be written by write() The advantage of keeping it separate is that it the 
+    config defaults won't be written to the users local config upon change.
     '''
     def read(self, files, system_files=()):
-        'Just expands paths and the calls the real config parser reader'
+        """Just expands paths and the calls the real config parser reader
+
+        >>> c=UbikConfig()
+        >>> c.read('tests/config.ini')
+        >>> c.read(('tests/config.ini','tests/config.ini'))
+        >>> c.read('tests/config.ini','/does/not/exist/system.ini')
+
+        """
         # System-level config
         if isinstance(system_files,str):
             system_files = (system_files,)
@@ -52,14 +62,52 @@ class UbikConfig(ConfigParser.SafeConfigParser):
             ConfigParser.SafeConfigParser.write(self, fileish)
 
     def get(self, section, option):
-        if ConfigParser.SafeConfigParser.has_option(self, section, option):
-            return ConfigParser.SafeConfigParser.get(self, *args)
-        elif self.global_config.has_option(section, option):
-            return self.global_config.get(section, option)
-        else:
-            secopt = '.'.join((section, option))
-            if secopt in ubik.defaults.config_defaults:
-                return ubik.defaults.config_defaults[secopt]
+        """Returns an option from one of several config files
+
+        Config file precedence is as follows:
+            1. config files read directly into this object as "files" to read()
+            2. global files read into self.global_config by read()
+            3. default from ubik.defaults.config_defaults
+
+        If the requested section contains ':' characters, the section will be
+        treated as a hierarchy of paths to search.  For example, section
+        "one:two:three" will try the following sections:
+            1. one:two:three
+            2. one:two
+            3. one
+
+        >>> c=UbikConfig()
+        >>> c.read('tests/config.ini', 'tests/system.ini')
+        >>> c.get('cache','dir')
+        '~/.rug/cache'
+        >>> c.get('test','one')
+        'two'
+        >>> c.get('system','three')
+        'four'
+        >>> c.get('package:rpm','arch')
+        'noarch'
+        >>> c.get('package:deb','arch')
+        'all'
+
+        """
+        while section:
+            if ConfigParser.SafeConfigParser.has_option(self, section, option):
+                return ConfigParser.SafeConfigParser.get(self, section, option)
+            elif self.global_config.has_option(section, option):
+                return self.global_config.get(section, option)
             else:
-                raise NoOptionError("Option %s not configured" % secopt)
+                secopt = '.'.join((section, option))
+                if secopt in ubik.defaults.config_defaults:
+                    return ubik.defaults.config_defaults[secopt]
+
+            if ':' in section:
+                section = section.rsplit(':', 1)[0]
+            else:
+                section = False
+
+        raise NoOptionError("Option %s not configured" % secopt)
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(optionflags=doctest.ELLIPSIS, verbose=False)
 
