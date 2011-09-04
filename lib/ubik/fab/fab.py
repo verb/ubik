@@ -9,8 +9,7 @@ import tempfile
 
 from fabric.api import abort, cd, local, prompt, warn
 
-from infra import packager
-from infra import builder
+from ubik import builder, packager
 
 # Ok, so this part gets a little complicated.
 # This is a rug module that uses the fabric library to call the 

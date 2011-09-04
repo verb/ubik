@@ -4,7 +4,7 @@ import logging
 import os, os.path
 
 from fabric.api import cd, local, prompt, warn
-from infra import builder, packager
+from ubik import builder, packager
 
 NAME = 'symlinks'
 log = logging.getLogger(NAME)

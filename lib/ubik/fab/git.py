@@ -5,7 +5,7 @@ import os, os.path
 
 from fabric.api import cd, local, prompt
 
-import infra.builder
+from ubik import builder
 
 NAME = 'git'
 log = logging.getLogger(NAME)
@@ -46,4 +46,4 @@ def clone(version, config, env):
 
 if __name__ == '__main__':
     clone("0.9.13", "doc/example-%s.ini" % NAME,
-        infra.builder.BuildEnv(builddir='test/out'))
+        builder.BuildEnv(builddir='test/out'))

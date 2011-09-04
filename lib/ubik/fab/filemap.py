@@ -6,7 +6,7 @@ import sys
 
 from fabric.api import abort, cd, local, prompt, warn
 
-from infra import builder, packager
+from ubik import builder, packager
 
 # filemap copies files directly from source to root, there is no build step
 defenv = builder.BuildEnv('_root','_root','.')

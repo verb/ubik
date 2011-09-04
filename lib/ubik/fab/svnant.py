@@ -7,7 +7,7 @@ import tempfile
 
 from fabric.api import abort, cd, local, prompt, warn
 
-from infra import packager
+from ubik import packager
 
 log = logging.getLogger('svnant')
 

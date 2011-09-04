@@ -8,8 +8,7 @@ import tempfile
 
 from fabric.api import abort, cd, local, prompt, warn
 
-from infra import builder
-from infra import packager
+from ubik import builder, packager
 
 NAME = 'ant'
 log = logging.getLogger(NAME)

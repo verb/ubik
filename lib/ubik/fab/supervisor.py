@@ -2,7 +2,7 @@
 import ConfigParser
 import os, os.path
 
-import infra.builder
+from ubik import builder
 
 from fabric.api import cd, local, prompt, warn
 
@@ -54,4 +54,4 @@ def write_supervisor_config(version, config, env):
 
 if __name__ == '__main__':
     write_supervisor_config('1.0', 'doc/example-%s.ini' % NAME,
-                            infra.builder.BuildEnv(rootdir='test/out'))
+                            builder.BuildEnv(rootdir='test/out'))
