@@ -15,10 +15,10 @@ def read(files):
 
 class Error(ConfigParser.Error):
     pass
-class NoOptionError(Error):
+class NoOptionError(ConfigParser.NoOptionError):
     pass
 
-# Note: SafeConfigParser is classic
+# Note: SafeConfigParser is classic (unfortunately)
 class UbikConfig(ConfigParser.SafeConfigParser):
     '''
     ConfigParser with ubik-specific extensions
@@ -106,7 +106,7 @@ class UbikConfig(ConfigParser.SafeConfigParser):
             else:
                 section = False
 
-        raise NoOptionError("Option %s not configured" % secopt)
+        raise NoOptionError(section, option)
 
 if __name__ == '__main__':
     import doctest
