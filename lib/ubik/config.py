@@ -61,7 +61,7 @@ class UbikConfig(ConfigParser.SafeConfigParser):
         else:
             ConfigParser.SafeConfigParser.write(self, fileish)
 
-    def get(self, section, option):
+    def get(self, section, option, raw=False, vars=None):
         """Returns an option from one of several config files
 
         Config file precedence is as follows:
@@ -92,9 +92,10 @@ class UbikConfig(ConfigParser.SafeConfigParser):
         """
         while section:
             if ConfigParser.SafeConfigParser.has_option(self, section, option):
-                return ConfigParser.SafeConfigParser.get(self, section, option)
+                return ConfigParser.SafeConfigParser.get(self, section, option,
+                                                         raw, vars)
             elif self.global_config.has_option(section, option):
-                return self.global_config.get(section, option)
+                return self.global_config.get(section, option, raw, vars)
             else:
                 secopt = '.'.join((section, option))
                 if secopt in ubik.defaults.config_defaults:
