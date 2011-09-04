@@ -32,8 +32,8 @@ def init_cli(args=None):
                  help='Use config FILE instead of %default')
     p.add_option('--debug', '-d', action='store_true',
                  help='Enable debug logging')
-#    p.add_option('--workdir', metavar='DIR',
-#                 help="Use DIR as working directory, creating if necessary")
+    p.add_option('--workdir', metavar='DIR',
+                 help="Use DIR as working directory, creating if necessary")
     p.add_option('--verbose', '-v', action='store_true',
                  help='Enable verbose logging')
     p.disable_interspersed_args()

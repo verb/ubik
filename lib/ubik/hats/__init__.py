@@ -7,6 +7,7 @@ log.debug("Logging initialized")
 class HatException(Exception):
     pass
 
+from .build import BuildHat
 from .cache import CacheHat
 from .config import ConfigHat
 from .helper import HelperHat
@@ -15,6 +16,7 @@ ALL_HATS = (
     HelperHat,
     ConfigHat,
     CacheHat,
+    BuildHat,
     )
 
 def hatter(hat_str, args, config=None, options=None):
