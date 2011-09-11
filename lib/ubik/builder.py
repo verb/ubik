@@ -117,4 +117,5 @@ class Builder(object):
         else:
             log.info("YES WE CAN!")
 
+        self.pkgcfg = pkgcfg
         return pkgcfg

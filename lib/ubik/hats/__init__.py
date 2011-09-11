@@ -11,12 +11,14 @@ from .build import BuildHat
 from .cache import CacheHat
 from .config import ConfigHat
 from .helper import HelperHat
+from .package import PackageHat
 
 ALL_HATS = (
     HelperHat,
     ConfigHat,
     CacheHat,
     BuildHat,
+    PackageHat,
     )
 
 def hatter(hat_str, args, config=None, options=None):
