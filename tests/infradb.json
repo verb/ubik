@@ -1,0 +1,28 @@
+{
+    "hosts": {
+        "balboa": "balboa.sjc1.pontiflex.net", 
+        "bertha": "bertha.dfw1.pontiflex.net", 
+        "freehold": "freehold.ewr2.pontiflex.net", 
+        "sprite": "sprite.atl1.pontiflex.net"
+    }, 
+    "roles": {
+        "ads": [
+            "ads.dfw1", 
+            "ads.sjc1", 
+            "ads.ewr2", 
+            "ads.atl1"
+        ], 
+        "ads.atl1": [
+            "sprite"
+        ], 
+        "ads.dfw1": [
+            "bertha.dfw1"
+        ], 
+        "ads.ewr2": [
+            "freehold.ewr2"
+        ], 
+        "ads.sjc1": [
+            "balboa.sjc1"
+        ]
+    }
+}
