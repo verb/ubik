@@ -34,6 +34,8 @@ class InfraDB(object):
 
         >>> db=InfraDB('json', 'tests/infradb.json')
         >>> db.expandhosts(('ads',))
+        [u'bertha.dfw1', u'balboa.sjc1', u'freehold.ewr2', u'sprite.atl1']
+        >>>
 
         """
         hosts = []
@@ -57,7 +59,7 @@ class InfraDB(object):
             domains = ('.',)
         roles = {}
         for domain in domains:
-            query = '.'.join(('services',domain)).strip('.')
+            query = '.'.join(('services', domain)).strip('.')
             log.info("attempting to list roles for: " + query )
             roles[domain] = _lookup_txt_role(query, False)
         return roles

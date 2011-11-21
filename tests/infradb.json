@@ -1,28 +1,31 @@
 {
     "hosts": {
-        "balboa": "balboa.sjc1.pontiflex.net", 
-        "bertha": "bertha.dfw1.pontiflex.net", 
-        "freehold": "freehold.ewr2.pontiflex.net", 
-        "sprite": "sprite.atl1.pontiflex.net"
-    }, 
+        "balboa.sjc1": "balboa.sjc1.pontiflex.net",
+        "bertha.dfw1": "bertha.dfw1.pontiflex.net",
+        "freehold.ewr2": "freehold.ewr2.pontiflex.net",
+        "sprite.atl1": "sprite.atl1.pontiflex.net"
+    },
     "roles": {
         "ads": [
-            "ads.dfw1", 
-            "ads.sjc1", 
-            "ads.ewr2", 
+            "ads.dfw1",
+            "ads.sjc1",
+            "ads.ewr2",
             "ads.atl1"
-        ], 
+        ],
         "ads.atl1": [
-            "sprite"
-        ], 
+            "sprite.atl1"
+        ],
         "ads.dfw1": [
             "bertha.dfw1"
-        ], 
+        ],
         "ads.ewr2": [
             "freehold.ewr2"
-        ], 
+        ],
         "ads.sjc1": [
             "balboa.sjc1"
+        ],
+        "broken": [
+            "bogus"
         ]
     }
 }
