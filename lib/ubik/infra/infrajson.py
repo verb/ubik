@@ -18,12 +18,12 @@ class InfraDBDriverJSON(object):
         >>> idb=InfraDBDriverJSON()
         >>> idb.confstr
         'infradb.json'
-        >>> len(idb.db['roles'])
+        >>> len(idb.db['services'])
         0
         >>> idb=InfraDBDriverJSON('tests/infradb.json')
         >>> idb.confstr
         'tests/infradb.json'
-        >>> len(idb.db['roles'])
+        >>> len(idb.db['services'])
         6
         >>>
 
@@ -34,41 +34,63 @@ class InfraDBDriverJSON(object):
             with open(confstr, 'r') as idb_fp:
                 self.db = json.load(idb_fp)
         except IOError:
-            self.db = {'hosts': {}, 'roles': {}}
+            self.db = {'hosts': {}, 'roles': {}, 'services': {}}
 
     def lookup_host(self, query):
         """Look up a host in the json infra db
 
         >>> idb=InfraDBDriverJSON('tests/infradb.json')
-        >>> idb.lookup_host('balboa.sjc1')
-        u'balboa.sjc1.pontiflex.net'
+        >>> idb.lookup_host('alpha.dc1')['name']
+        'alpha.dc1'
         >>> idb.lookup_host('bogus')
         >>>
 
         """
         log.debug("Looking up host '%s'" % query)
-        return self.db['hosts'].get(query, None)
+        host_dict = self.db['hosts'].get(query, None)
+        if host_dict and not 'name' in host_dict:
+            host_dict['name'] = query
+        return host_dict
 
-    def lookup_role(self, query):
-        """Resolve a role to a list of hosts
+    def lookup_service(self, query):
+        """Look up a service and return its attributes as a dict
 
         >>> idb=InfraDBDriverJSON('tests/infradb.json')
-        >>> idb.lookup_role('ads')
-        [u'bertha.dfw1', u'balboa.sjc1', u'freehold.ewr2', u'sprite.atl1']
-        >>> idb.lookup_role('bogus')
+        >>> idb.lookup_service('webserver.dc1')['name']
+        'webserver.dc1'
+        >>> idb.lookup_service('bogus')
+        >>>
+
+        """
+        log.debug("Looking up service '%s'" % query)
+        service_dict = self.db['services'].get(query, None)
+        if service_dict and not 'name' in service_dict:
+            service_dict['name'] = query
+        return service_dict
+
+    def resolve_service(self, query):
+        """Resolve a service to a list of hosts
+
+        >>> idb=InfraDBDriverJSON('tests/infradb.json')
+        >>> idb.resolve_service('webserver')
+        [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
+        >>> idb.resolve_service('mailserver')
+        [u'alpha.dc1', u'charlie.dc2']
+        >>> idb.resolve_service('bogus')
         []
-        >>> idb.lookup_role('broken')
+        >>> idb.resolve_service('broken')
         []
         >>>
 
         """
-        log.debug("Looking up role '%s'" % query)
+        log.debug("Looking up service '%s'" % query)
         hosts = []
-        for res in self.db['roles'].get(query, []):
-            if self.lookup_host(res):
-                hosts.append(res)
-            else:
-                hosts.extend(self.lookup_role(res))
+        service = self.db['services'].get(query, [])
+        if 'hosts' in service:
+            hosts.extend(service['hosts'])
+        if 'services' in service:
+            for subservice in service['services']:
+                hosts.extend(self.resolve_service(subservice))
         return hosts
 
 if __name__ == '__main__':

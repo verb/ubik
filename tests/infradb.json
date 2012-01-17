@@ -1,31 +1,57 @@
 {
     "hosts": {
-        "balboa.sjc1": "balboa.sjc1.pontiflex.net",
-        "bertha.dfw1": "bertha.dfw1.pontiflex.net",
-        "freehold.ewr2": "freehold.ewr2.pontiflex.net",
-        "sprite.atl1": "sprite.atl1.pontiflex.net"
+        "alpha.dc1": {
+            "services": [
+                "webserver",
+                "mailserver"
+            ]
+        },
+        "bravo.dc1": {
+            "services": [
+                "webserver"
+            ]
+        },
+        "charlie.dc2": {
+            "services": [
+                "webserver",
+                "mailserver"
+            ]
+        },
+        "delta.dc3": {
+            "services": [
+                "webserver"
+            ]
+        }
     },
-    "roles": {
-        "ads": [
-            "ads.dfw1",
-            "ads.sjc1",
-            "ads.ewr2",
-            "ads.atl1"
-        ],
-        "ads.atl1": [
-            "sprite.atl1"
-        ],
-        "ads.dfw1": [
-            "bertha.dfw1"
-        ],
-        "ads.ewr2": [
-            "freehold.ewr2"
-        ],
-        "ads.sjc1": [
-            "balboa.sjc1"
-        ],
-        "broken": [
-            "bogus"
-        ]
+    "services": {
+        "webserver": {
+            "services": [
+                "webserver.dc1",
+                "webserver.dc2",
+                "webserver.dc3"
+            ]
+        },
+        "webserver.dc1": {
+            "hosts": [
+                "alpha.dc1",
+                "bravo.dc1"
+            ]
+        },
+        "webserver.dc2": {
+            "hosts": [
+                "charlie.dc2"
+            ]
+        },
+        "webserver.dc3": {
+            "hosts": [
+                "delta.dc3"
+            ]
+        },
+        "mailserver": {
+            "hosts": [
+                "alpha.dc1",
+                "charlie.dc2"
+            ]
+        }
     }
 }

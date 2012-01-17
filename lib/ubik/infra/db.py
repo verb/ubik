@@ -32,12 +32,12 @@ class InfraDB(object):
         """Looks up a single host based on qname and returns an InfraHost
 
         >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> db.host('balboa.sjc1')
-        'InfraHost: balboa.sjc1.pontiflex.net'
-        >>> db.host('foobar')
+        >>> db.host('alpha.dc1')
+        'InfraHost: alpha.dc1'
+        >>> db.host('bogus')
         Traceback (most recent call last):
             ...
-        InfraDBException: Could not locate host 'foobar'
+        InfraDBException: Could not locate host 'bogus'
 
         """
         log.debug("db.host looking up host: " + qname)
@@ -54,23 +54,23 @@ class InfraDB(object):
         it into InfraHosts.  Deduplication is attempted on the results.
 
         >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> db.hosts(('balboa.sjc1','bertha.dfw1'))
-        ['InfraHost: balboa.sjc1.pontiflex.net', 'InfraHost: bertha.dfw1.pontiflex.net']
-        >>> db.hosts(('balboa.sjc1','ads.dfw1'))
-        ['InfraHost: balboa.sjc1.pontiflex.net', 'InfraHost: bertha.dfw1.pontiflex.net']
-        >>> db.hosts(('balboa.sjc1','foobar'))
+        >>> db.hosts(('alpha.dc1','charlie.dc2'))
+        ['InfraHost: alpha.dc1', 'InfraHost: charlie.dc2']
+        >>> db.hosts(('alpha.dc1','webserver.dc2'))
+        ['InfraHost: alpha.dc1', 'InfraHost: charlie.dc2']
+        >>> db.hosts(('alpha.dc1','bogus'))
         Traceback (most recent call last):
             ...
-        InfraDBException: Could not locate host 'foobar'
-        >>> db.hosts(('balboa.sjc1','broken'))
+        InfraDBException: Could not locate host 'bogus'
+        >>> db.hosts(('alpha.dc1','broken'))
         Traceback (most recent call last):
             ...
         InfraDBException: Could not locate host 'broken'
-        >>> db.hosts(('balboa.sjc1','ads')) #doctest: +NORMALIZE_WHITESPACE
-        ['InfraHost: balboa.sjc1.pontiflex.net', 
-         'InfraHost: bertha.dfw1.pontiflex.net',
-         'InfraHost: freehold.ewr2.pontiflex.net',
-         'InfraHost: sprite.atl1.pontiflex.net']
+        >>> db.hosts(('alpha.dc1','webserver')) #doctest: +NORMALIZE_WHITESPACE
+        ['InfraHost: alpha.dc1', 
+         'InfraHost: bravo.dc1',
+         'InfraHost: charlie.dc2',
+         'InfraHost: delta.dc3']
 
         """
         hosts = []
@@ -80,10 +80,10 @@ class InfraDB(object):
                 hosts.append(self.host(qname))
             except InfraDBException:
                 # self.host() couldn't find a host named 'qname'
-                # qname could be a role, though, so try that
-                role_hosts = self.hosts(self.driver.lookup_role(qname))
-                if len(role_hosts) > 0:
-                    hosts.extend(role_hosts)
+                # qname could be a service, though, so try that
+                service_hosts = self.hosts(self.driver.resolve_service(qname))
+                if len(service_hosts) > 0:
+                    hosts.extend(service_hosts)
                 else:
                     raise
 
@@ -91,72 +91,76 @@ class InfraDB(object):
         seen = set()
         return [x for x in hosts if str(x) not in seen and not seen.add(str(x))]
 
-    def role(self, qname):
-        """Looks up a single role based on qname and returns an InfraRole
+    def service(self, qname):
+        """Looks up a single service based on qname and returns an InfraService
 
         >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> db.role('ads')
-        'InfraRole: ads'
-        >>> db.role('ads.sjc1')
-        'InfraRole: ads.sjc1'
-        >>> db.role('foobar')
+        >>> db.service('webserver')
+        'InfraService: webserver'
+        >>> db.service('webserver.dc1')
+        'InfraService: webserver.dc1'
+        >>> db.service('bogus')
         Traceback (most recent call last):
             ...
-        InfraDBException: Could not locate role 'foobar'
+        InfraDBException: Could not locate service 'bogus'
+        >>> db.service('broken')
+        Traceback (most recent call last):
+            ...
+        InfraDBException: Could not locate service 'broken'
 
         """
-        log.debug("db.role looking up role: " + qname)
-        role_names = self.driver.lookup_role(qname)
-        if len(role_names) > 0:
-            role = InfraRole(qname, self.driver)
+        log.debug("db.service looking up service: " + qname)
+        service_dict = self.driver.lookup_service(qname)
+        if service_dict:
+            service = InfraService(service_dict, self.driver)
         else:
-            raise InfraDBException("Could not locate role '%s'" % qname)
+            raise InfraDBException("Could not locate service '%s'" % qname)
 
-        return role
+        return service
 
-    def roles(self, qnames):
-        """Example multiple roles, Return a list of InfraRoles
+    def services(self, qnames):
+        """Example multiple roles, Return a list of InfraServices
 
         >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> db.roles(('ads',))
-        ['InfraRole: ads']
-        >>> db.roles(('ads.sjc1','ads.dfw1'))
-        ['InfraRole: ads.sjc1', 'InfraRole: ads.dfw1']
-        >>> db.roles(('ads.sjc1','broken'))
+        >>> db.services(('webserver',))
+        ['InfraService: webserver']
+        >>> db.services(('webserver.dc2','webserver.dc3'))
+        ['InfraService: webserver.dc2', 'InfraService: webserver.dc3']
+        >>> db.services(('webserver.dc1','broken'))
         Traceback (most recent call last):
             ...
-        InfraDBException: Could not locate role 'broken'
+        InfraDBException: Could not locate service 'broken'
 
         """
-        roles = []
+        services = []
         for qname in qnames:
-            roles.append(self.role(qname))
-        return roles
+            services.append(self.service(qname))
+        return services
 
-    def expandhosts(self, records):
-        """Expand a list of objects to their constituent hosts, and dedupe
-
-        >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> db.expandhosts(('ads',))
-        [u'bertha.dfw1', u'balboa.sjc1', u'freehold.ewr2', u'sprite.atl1']
-        >>>
-
-        """
-        hosts = []
-        log.debug("attempting to expand hostnames for: " + ' '.join(records))
-        for record in records:
-            if self.driver.lookup_host(record):
-                # If this is a host, use it verbatim
-                hosts.append(record)
-            else:
-                # try to expand role to host
-                hosts.extend(self.driver.lookup_role(record))
-
-        # Dedupe hosts, but preserve order
-        # Caveat: dedupe is currently naiive because TXT records are expanded to
-        # FQDN while A records remain unqualified
-        seen = set()
-        return [x for x in hosts if x not in seen and not seen.add(x)]
+#    def expandhosts(self, records):
+#        """Expand a list of objects to their constituent hosts, and dedupe
+#
+#        >>> db=InfraDB('json', 'tests/infradb.json')
+#        >>> db.expandhosts(('webserver',))
+#        [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
+#        >>>
+#
+#        """
+#        hosts = []
+#        log.debug("attempting to expand hostnames for: " + ' '.join(records))
+#        for record in records:
+#            if self.driver.lookup_host(record):
+#                # If this is a host, use it verbatim
+#                hosts.append(record)
+#            else:
+#                # try to expand role to host
+#                hosts.extend(self.driver.resolve_service(record))
+#
+#        # Dedupe hosts, but preserve order
+#        # Caveat: dedupe is currently naiive because TXT records are expanded to
+#        # FQDN while A records remain unqualified
+#        seen = set()
+#        return [x for x in hosts if x not in seen and not seen.add(x)]
 
     def listroles(self, domains=None):
         if domains == None or len(domains) == 0:
@@ -169,23 +173,57 @@ class InfraDB(object):
         return roles
 
 class InfraObject(object):
-    def __init__(self, name, driver):
-        self.name = name
-        self.driver = driver
+    def __init__(self, attr, driver):
+        self._name = attr['name']
+        self._driver = driver
+        self._hosts = attr.get('hosts', [])
+        self._services = attr.get('services', [])
 
     def __str__(self):
-        return str(self.name)
+        return str(self._name)
 
     def __unicode__(self):
-        return unicode(self.name)
+        return unicode(self._name)
 
 class InfraHost(InfraObject):
     def __repr__(self):
-        return "'InfraHost: %s'" % self.name
+        return "'InfraHost: %s'" % self._name
 
-class InfraRole(InfraObject):
+    def services(self):
+        """Figure out what services run on this host
+
+        Currently, this returns list of strings
+
+        >>> db=InfraDB('json', 'tests/infradb.json')
+        >>> h=db.host('alpha.dc1')
+        >>> h
+        'InfraHost: alpha.dc1'
+        >>> h.services()
+        [u'webserver', u'mailserver']
+        >>>
+
+        """
+        return self._driver.lookup_host(self._name)['services']
+
+class InfraService(InfraObject):
     def __repr__(self):
-        return "'InfraRole: %s'" % self.name
+        return "'InfraService: %s'" % self._name
+
+    def hosts(self):
+        """Resolve this service to its constituent hosts
+
+        Currently, this is just a list of strings
+
+        >>> db=InfraDB('json', 'tests/infradb.json')
+        >>> srv=db.service('webserver')
+        >>> srv
+        'InfraService: webserver'
+        >>> srv.hosts()
+        [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
+        >>>
+
+        """
+        return self._driver.resolve_service(self._name)
 
 if __name__ == '__main__':
     import doctest
