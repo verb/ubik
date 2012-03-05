@@ -29,7 +29,7 @@ def hatter(hat_str, args, config=None, options=None):
     for hat in ALL_HATS:
         if hat.areyou(hat_str):
             log.debug("%s matched hat %s" % (hat_str, hat.__name__))
-            return hat(args, config, options)
+            return hat((hat_str, args), config, options)
 
     # Could not find a hat
     return None

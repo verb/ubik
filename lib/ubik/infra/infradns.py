@@ -11,6 +11,11 @@ class InfraDBDriverDNS(object):
 
     This provides access to an InfraDB created from DNS.
 
+    >>> import os
+    >>> os.environ['RUG_RESOLV_CONF'] = 'tests/named/resolv.conf'
+    >>> os.environ['RUG_RESOLV_PORT'] = '5533'
+    >>>
+
     """
     def __init__(self):
         """Initialize a new DNS InfraDB Driver
@@ -22,6 +27,8 @@ class InfraDBDriverDNS(object):
         log.debug("Initialize InfraDB DNS driver")
         if 'RUG_RESOLV_CONF' in os.environ:
             self.resolver = dns.resolver.Resolver(os.environ['RUG_RESOLV_CONF'])
+            if 'RUG_RESOLV_PORT' in os.environ:
+                self.resolver.port = int(os.environ['RUG_RESOLV_PORT'])
         else:
             self.resolver = dns.resolver.get_default_resolver()
 
@@ -29,8 +36,8 @@ class InfraDBDriverDNS(object):
         """Look up a host based on partial name, return FQDN
 
         >>> idb=InfraDBDriverDNS()
-        >>> idb.lookup_host('balboa.sjc1')
-        u'balboa.sjc1.pontiflex.net'
+        >>> idb.lookup_host('alpha.dc1')
+        u'alpha.dc1.example.com'
         >>> idb.lookup_host('bogus')
         >>>
 
