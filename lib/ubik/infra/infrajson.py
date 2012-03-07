@@ -24,7 +24,7 @@ class InfraDBDriverJSON(object):
         >>> idb.confstr
         'tests/infradb.json'
         >>> len(idb.db['services'])
-        6
+        7
         >>>
 
         """
@@ -37,11 +37,16 @@ class InfraDBDriverJSON(object):
             self.db = {'hosts': {}, 'roles': {}, 'services': {}}
 
     def lookup_host(self, query):
-        """Look up a host in the json infra db
+        """Look up a host in the json infra db.  Return dict.
 
         >>> idb=InfraDBDriverJSON('tests/infradb.json')
-        >>> idb.lookup_host('alpha.dc1')['name']
-        'alpha.dc1'
+        >>> h=idb.lookup_host('alpha.dc1')
+        >>> h['name']
+        u'alpha.dc1'
+        >>> (h['hardware'], h['os'])
+        (u'hardware_tag', u'os_tag')
+        >>> sorted(h['services'])
+        [u'mailserver', u'webserver']
         >>> idb.lookup_host('bogus')
         >>>
 
@@ -49,15 +54,22 @@ class InfraDBDriverJSON(object):
         log.debug("Looking up host '%s'" % query)
         host_dict = self.db['hosts'].get(query, None)
         if host_dict and not 'name' in host_dict:
-            host_dict['name'] = query
+            host_dict[u'name'] = unicode(query)
         return host_dict
 
     def lookup_service(self, query):
         """Look up a service and return its attributes as a dict
 
         >>> idb=InfraDBDriverJSON('tests/infradb.json')
-        >>> idb.lookup_service('webserver.dc1')['name']
-        'webserver.dc1'
+        >>> svc=idb.lookup_service('webserver')
+        >>> svc['name']
+        u'webserver'
+        >>> sorted(svc['services'])
+        [u'webserver.dc1', u'webserver.dc2']
+        >>> svc['hosts']
+        [u'delta.dc3']
+        >>> len(idb.lookup_service('webserver.dc1')['hosts'])
+        2
         >>> idb.lookup_service('bogus')
         >>>
 
@@ -65,16 +77,16 @@ class InfraDBDriverJSON(object):
         log.debug("Looking up service '%s'" % query)
         service_dict = self.db['services'].get(query, None)
         if service_dict and not 'name' in service_dict:
-            service_dict['name'] = query
+            service_dict[u'name'] = unicode(query)
         return service_dict
 
     def resolve_service(self, query):
         """Resolve a service to a list of hosts
 
         >>> idb=InfraDBDriverJSON('tests/infradb.json')
-        >>> idb.resolve_service('webserver')
+        >>> sorted(idb.resolve_service('webserver'))
         [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
-        >>> idb.resolve_service('mailserver')
+        >>> sorted(idb.resolve_service('mailserver'))
         [u'alpha.dc1', u'charlie.dc2']
         >>> idb.resolve_service('bogus')
         []

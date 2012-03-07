@@ -1,23 +1,31 @@
 {
     "hosts": {
         "alpha.dc1": {
+            "hardware": "hardware_tag",
+            "os": "os_tag",
             "services": [
                 "webserver",
                 "mailserver"
             ]
         },
         "bravo.dc1": {
+            "hardware": "hardware_tag",
+            "os": "os_tag",
             "services": [
                 "webserver"
             ]
         },
         "charlie.dc2": {
+            "hardware": "hardware_tag",
+            "os": "os_tag",
             "services": [
                 "webserver",
                 "mailserver"
             ]
         },
         "delta.dc3": {
+            "hardware": "hardware_tag",
+            "os": "os_tag",
             "services": [
                 "webserver"
             ]
@@ -27,8 +35,10 @@
         "webserver": {
             "services": [
                 "webserver.dc1",
-                "webserver.dc2",
-                "webserver.dc3"
+                "webserver.dc2"
+            ],
+            "hosts": [
+                "delta.dc3"
             ]
         },
         "webserver.dc1": {
@@ -50,6 +60,16 @@
         "mailserver": {
             "hosts": [
                 "alpha.dc1",
+                "charlie.dc2"
+            ]
+        },
+        "mailserver.dc1": {
+            "hosts": [
+                "alpha.dc1"
+            ]
+        },
+        "mailserver.dc2": {
+            "hosts": [
                 "charlie.dc2"
             ]
         }

@@ -1,0 +1,71 @@
+; vim: noexpandtab:
+$TTL	86400
+$ORIGIN .
+@			1D IN SOA	@ root (
+					1		; serial
+					3H		; refresh
+					15M		; retry
+					1W		; expiry
+					1D )		; minimum
+
+.			1D IN NS	ns.
+ns.			1D IN A		127.0.0.1
+
+$ORIGIN example.com.
+;			1D IN NS	example.com.
+
+$ORIGIN alpha.dc1.example.com.
+@			IN	A		127.0.1.1
+@			IN	HINFO	"hardware_tag" "os_tag"
+_services   IN  TXT 	"webserver"
+_services   IN  TXT 	"mailserver"
+$ORIGIN bravo.dc1.example.com.
+@			IN	A		127.0.1.2
+@			IN	HINFO	"hardware_tag" "os_tag"
+_services   IN  TXT 	"webserver"
+$ORIGIN charlie.dc2.example.com.
+@			IN	A		127.0.1.3
+@			IN	HINFO	"hardware_tag" "os_tag"
+_services   IN  TXT 	"webserver"
+_services   IN  TXT 	"mailserver"
+$ORIGIN delta.dc3.example.com.
+@			IN	A		127.0.1.4
+@			IN	HINFO	"hardware_tag" "os_tag"
+_services   IN  TXT 	"webserver"
+
+webserver.example.com.	IN	CNAME	ns.
+$ORIGIN _services.example.com.
+@			IN	TXT	"webserver"
+@			IN	TXT	"mailserver"
+$ORIGIN mailserver.example.com.
+_service	IN	TXT	"mailserver.dc1"
+_service	IN	TXT	"mailserver.dc3"
+$ORIGIN webserver.example.com.
+_service	IN	TXT	"webserver.dc1"
+_service	IN	TXT	"webserver.dc2"
+_host		IN	TXT	"delta.dc3"
+
+$ORIGIN _services.dc1.example.com.
+@			IN	TXT	"webserver"
+@			IN	TXT	"mailserver"
+$ORIGIN mailserver.dc1.example.com.
+_host		IN	TXT	"alpha.dc1"
+$ORIGIN webserver.dc1.example.com.
+_host		IN	TXT	"alpha.dc1"
+_host		IN	TXT	"bravo.dc1"
+
+$ORIGIN _services.dc2.example.com.
+@			IN	TXT	"webserver"
+@			IN	TXT	"mailserver"
+$ORIGIN mailserver.dc2.example.com.
+_host		IN	TXT	"charlie.dc2"
+$ORIGIN webserver.dc2.example.com.
+_host		IN	TXT	"charlie.dc2"
+
+$ORIGIN _services.dc3.example.com.
+@			IN	TXT	"webserver"
+$ORIGIN mailserver.dc3.example.com.
+_host		IN	TXT	"delta.dc3"
+$ORIGIN webserver.dc3.example.com.
+_host		IN	TXT	"delta.dc3"
+

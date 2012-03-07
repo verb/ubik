@@ -32,59 +32,94 @@ class InfraDBDriverDNS(object):
         else:
             self.resolver = dns.resolver.get_default_resolver()
 
+    def _query(self, query, qtype='A'):
+        """Query resolver and return an answer object or None"""
+        try:
+            answer = self.resolver.query(query, qtype)
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+            pass
+        else:
+            return answer
+        return None
+    
+    def _query_txt(self, query):
+        """Query resolver for TXT record and return a list of strings"""
+        answer = self._query(query, 'TXT')
+        if answer:
+            txts = []
+            for record in answer:
+                # Each TXT record can have a list of strings delimitted by
+                # quotes.  e.g. '"one two" "three four"'
+                # This should be come ('one two', 'three four')
+                txts.extend([unicode(s) for s in record.strings])
+            return txts
+        return None
+
     def lookup_host(self, query):
         """Look up a host based on partial name, return FQDN
 
         >>> idb=InfraDBDriverDNS()
-        >>> idb.lookup_host('alpha.dc1')
-        u'alpha.dc1.example.com'
+        >>> h=idb.lookup_host('alpha.dc1')
+        >>> h['name']
+        u'alpha.dc1'
+        >>> (h['hardware'], h['os'])
+        (u'hardware_tag', u'os_tag')
+        >>> sorted(h['services'])
+        [u'mailserver', u'webserver']
         >>> idb.lookup_host('bogus')
         >>>
 
         """
-        log.debug("Looking up A record for '%s'", query)
-        try:
-            answer =  self.resolver.query(query, 'A')
-        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-            pass
-        else:
-            if len(answer) > 0:
-                return unicode(answer.canonical_name).rstrip('.')
+        log.debug("Gathering info for host '%s'", query)
+        host = dict()
+        answer = self._query(query, 'A')
+        if answer and len(answer) > 0:
+            host['name'] = unicode(query)
+            host['fqdn'] = unicode(answer.canonical_name).rstrip('.')
+
+        if host:
+            answer = self._query(query, 'HINFO')
+            if answer and len(answer) > 0:
+                host['hardware'] = unicode(answer[0].cpu)
+                host['os'] = unicode(answer[0].os)
+            svcs = self._query_txt("_services."+query)
+            if svcs:
+                host['services'] = svcs
+            return host
+        
         return None
 
-    def lookup_role(self, query):
-        """Resolve a role to a list of host FQDNs
+    def lookup_service(self, query):
+        """Look up a service and return its attributes as a dict
 
         >>> idb=InfraDBDriverDNS()
-        >>> idb.lookup_role('ads') #doctest: +NORMALIZE_WHITESPACE
-        [u'sprite.atl1.pontiflex.net', u'bertha.dfw1.pontiflex.net',
-         u'freehold.ewr2.pontiflex.net', u'balboa.sjc1.pontiflex.net']
-        >>> idb.lookup_role('ads.atl1')
-        [u'sprite.atl1.pontiflex.net']
-        >>> idb.lookup_role('bogus')
-        []
-        >>> idb.lookup_role('broken')
-        []
+        >>> svc=idb.lookup_service('webserver')
+        >>> svc['name']
+        u'webserver'
+        >>> sorted(svc['services'])
+        [u'webserver.dc1', u'webserver.dc2']
+        >>> svc['hosts']
+        [u'delta.dc3']
+        >>> len(idb.lookup_service('webserver.dc1')['hosts'])
+        2
+        >>> idb.lookup_service('bogus')
+        >>> idb.lookup_service('broken')
         >>>
 
         """
-        hosts = []
-        log.debug("Looking up TXT record for '%s'" % query)
-        try:
-            answer = self.resolver.query(query, 'TXT')
-            for record in answer.rrset:
-                for txt_sub in str(record).split():
-                    # Remove tags and spurious quotes
-                    # TODO: the following translate() is not unicode safe
-                    txt_sub = txt_sub.translate(None, "'\"").split(':')[-1]
-                    fqdn = '.'.join((txt_sub, str(answer.qname.parent())))
-                    if self.lookup_host(fqdn):
-                        hosts.append(unicode(fqdn.rstrip('.')))
-                    else:
-                        hosts.extend(self.lookup_role(fqdn))
-        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-            pass
-        return hosts
+        log.debug("Gathering info for service '%s'", query)
+        svc = dict()
+        if (self._query_txt('_service.'+query) or
+            self._query_txt('_host.'+query)):
+            svc['name'] = unicode(query)
+
+        # If service exists, gather its attributes
+        if svc:
+            svc["services"] = self._query_txt("_service."+query)
+            svc["hosts"] = self._query_txt("_host."+query)
+            return svc
+        
+        return None
 
 if __name__ == '__main__':
     import doctest
