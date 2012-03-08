@@ -36,6 +36,29 @@ class InfraDBDriverJSON(object):
         except IOError:
             self.db = {'hosts': {}, 'roles': {}, 'services': {}}
 
+    def list_services(self, query=None):
+        """Return a list of strings representing all services
+
+        'query' is the optional subdomain
+
+        >>> idb=InfraDBDriverJSON('tests/infradb.json')
+        >>> sorted(idb.list_services())
+        [u'mailserver', u'webserver']
+        >>> sorted(idb.list_services(''))
+        [u'mailserver', u'webserver']
+        >>> sorted(idb.list_services('dc1'))
+        [u'mailserver.dc1', u'webserver.dc1']
+        >>>
+
+        """
+        if 'services' in self.db:
+            if query:
+                f = lambda x: query in x
+            else:
+                f = lambda x: '.' not in x
+            return filter(f, self.db['services'].keys())
+        return None
+
     def lookup_host(self, query):
         """Look up a host in the json infra db.  Return dict.
 

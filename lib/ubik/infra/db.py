@@ -66,11 +66,8 @@ class InfraDB(object):
         Traceback (most recent call last):
             ...
         InfraDBException: Could not locate host 'broken'
-        >>> db.hosts(('alpha.dc1','webserver')) #doctest: +NORMALIZE_WHITESPACE
-        ['InfraHost: alpha.dc1', 
-         'InfraHost: bravo.dc1',
-         'InfraHost: charlie.dc2',
-         'InfraHost: delta.dc3']
+        >>> sorted(db.hosts(('alpha.dc1','mailserver')))
+        ['InfraHost: alpha.dc1', 'InfraHost: charlie.dc2']
 
         """
         hosts = []
@@ -137,40 +134,26 @@ class InfraDB(object):
             services.append(self.service(qname))
         return services
 
-#    def expandhosts(self, records):
-#        """Expand a list of objects to their constituent hosts, and dedupe
-#
-#        >>> db=InfraDB('json', 'tests/infradb.json')
-#        >>> db.expandhosts(('webserver',))
-#        [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
-#        >>>
-#
-#        """
-#        hosts = []
-#        log.debug("attempting to expand hostnames for: " + ' '.join(records))
-#        for record in records:
-#            if self.driver.lookup_host(record):
-#                # If this is a host, use it verbatim
-#                hosts.append(record)
-#            else:
-#                # try to expand role to host
-#                hosts.extend(self.driver.resolve_service(record))
-#
-#        # Dedupe hosts, but preserve order
-#        # Caveat: dedupe is currently naiive because TXT records are expanded to
-#        # FQDN while A records remain unqualified
-#        seen = set()
-#        return [x for x in hosts if x not in seen and not seen.add(x)]
+    def list_services(self, domains=None):
+        """Compile a list of available services
 
-    def listroles(self, domains=None):
+        if `domains` is specified, it is a list of sub-domains to query.
+        Otherwise only top level services are returned.
+
+        >>> db=InfraDB('json', 'tests/infradb.json')
+        >>> sorted(db.list_services())
+        [u'mailserver', u'webserver']
+        >>> sorted(db.list_services(('dc1','dc3')))
+        [u'mailserver.dc1', u'webserver.dc1', u'webserver.dc3']
+        >>>
+
+        """
         if domains == None or len(domains) == 0:
-            domains = ('.',)
-        roles = {}
+            domains = (None,)
+        services = []
         for domain in domains:
-            query = '.'.join(('services', domain)).strip('.')
-            log.info("attempting to list roles for: " + query )
-            #roles[domain] = _lookup_txt_role(query, False)
-        return roles
+            services.extend(self.driver.list_services(domain))
+        return services
 
 class InfraObject(object):
     def __init__(self, attr, driver):
@@ -186,6 +169,14 @@ class InfraObject(object):
         return unicode(self._name)
 
 class InfraHost(InfraObject):
+    """This represents a single host in this infrastructure
+
+    >>> db=InfraDB('json', 'tests/infradb.json')
+    >>> db.host('alpha.dc1')
+    'InfraHost: alpha.dc1'
+    >>>
+
+    """
     def __repr__(self):
         return "'InfraHost: %s'" % self._name
 
@@ -195,10 +186,7 @@ class InfraHost(InfraObject):
         Currently, this returns list of strings
 
         >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> h=db.host('alpha.dc1')
-        >>> h
-        'InfraHost: alpha.dc1'
-        >>> h.services()
+        >>> db.host('alpha.dc1').services()
         [u'webserver', u'mailserver']
         >>>
 
@@ -206,6 +194,14 @@ class InfraHost(InfraObject):
         return self._driver.lookup_host(self._name)['services']
 
 class InfraService(InfraObject):
+    """This represents a service running on a set of hosts
+
+    >>> db=InfraDB('json', 'tests/infradb.json')
+    >>> db.service('webserver')
+    'InfraService: webserver'
+    >>>
+
+    """
     def __repr__(self):
         return "'InfraService: %s'" % self._name
 
@@ -215,11 +211,10 @@ class InfraService(InfraObject):
         Currently, this is just a list of strings
 
         >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> srv=db.service('webserver')
-        >>> srv
-        'InfraService: webserver'
-        >>> srv.hosts()
+        >>> sorted(db.service('webserver').hosts())
         [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
+        >>> sorted(db.service('webserver.dc1').hosts())
+        [u'alpha.dc1', u'bravo.dc1']
         >>>
 
         """

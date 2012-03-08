@@ -55,6 +55,28 @@ class InfraDBDriverDNS(object):
             return txts
         return None
 
+    def list_services(self, query=None):
+        """Return a list of strings representing all services
+
+        'query' is the optional subdomain
+
+        >>> idb=InfraDBDriverDNS()
+        >>> sorted(idb.list_services())
+        [u'mailserver', u'webserver']
+        >>> sorted(idb.list_services(''))
+        [u'mailserver', u'webserver']
+        >>> sorted(idb.list_services('dc1'))
+        [u'mailserver.dc1', u'webserver.dc1']
+        >>>
+
+        """
+        rr = '_services'
+        if query:
+            suffix = '.' + query
+            return [s+suffix for s in self._query_txt(rr+suffix)]
+        else:
+            return self._query_txt(rr)
+
     def lookup_host(self, query):
         """Look up a host based on partial name, return FQDN
 
@@ -103,7 +125,6 @@ class InfraDBDriverDNS(object):
         >>> len(idb.lookup_service('webserver.dc1')['hosts'])
         2
         >>> idb.lookup_service('bogus')
-        >>> idb.lookup_service('broken')
         >>>
 
         """
@@ -115,11 +136,43 @@ class InfraDBDriverDNS(object):
 
         # If service exists, gather its attributes
         if svc:
-            svc["services"] = self._query_txt("_service."+query)
-            svc["hosts"] = self._query_txt("_host."+query)
+            txt_list = self._query_txt("_service."+query)
+            if txt_list:
+                svc["services"] = txt_list
+            txt_list = self._query_txt("_host."+query)
+            if txt_list:
+                svc["hosts"] = txt_list
             return svc
         
         return None
+
+    def resolve_service(self, query):
+        """Resolve a service to a list of hosts
+
+        >>> idb=InfraDBDriverDNS()
+        >>> sorted(idb.resolve_service('webserver'))
+        [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
+        >>> sorted(idb.resolve_service('mailserver'))
+        [u'alpha.dc1', u'charlie.dc2']
+        >>> sorted(idb.resolve_service('webserver.dc1'))
+        [u'alpha.dc1', u'bravo.dc1']
+        >>> idb.resolve_service('bogus')
+        []
+        >>> idb.resolve_service('broken')
+        []
+        >>>
+
+        """
+        log.debug("Expanding service '%s'", query)
+        hosts = []
+        svc = self.lookup_service(query)
+        if svc:
+            if 'hosts' in svc:
+                hosts.extend(svc['hosts'])
+            if 'services' in svc and svc['services']:
+                for service in svc['services']:
+                    hosts.extend(self.resolve_service(service))
+        return hosts
 
 if __name__ == '__main__':
     import doctest

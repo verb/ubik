@@ -58,9 +58,9 @@
             ]
         },
         "mailserver": {
-            "hosts": [
-                "alpha.dc1",
-                "charlie.dc2"
+            "services": [
+                "mailserver.dc1",
+                "mailserver.dc2"
             ]
         },
         "mailserver.dc1": {

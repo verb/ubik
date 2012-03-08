@@ -39,11 +39,13 @@ $ORIGIN _services.example.com.
 @			IN	TXT	"mailserver"
 $ORIGIN mailserver.example.com.
 _service	IN	TXT	"mailserver.dc1"
-_service	IN	TXT	"mailserver.dc3"
+_service	IN	TXT	"mailserver.dc2"
 $ORIGIN webserver.example.com.
 _service	IN	TXT	"webserver.dc1"
 _service	IN	TXT	"webserver.dc2"
 _host		IN	TXT	"delta.dc3"
+$ORIGIN broken.example.com.
+_service	IN	TXT	"bogus"
 
 $ORIGIN _services.dc1.example.com.
 @			IN	TXT	"webserver"
@@ -64,8 +66,6 @@ _host		IN	TXT	"charlie.dc2"
 
 $ORIGIN _services.dc3.example.com.
 @			IN	TXT	"webserver"
-$ORIGIN mailserver.dc3.example.com.
-_host		IN	TXT	"delta.dc3"
 $ORIGIN webserver.dc3.example.com.
 _host		IN	TXT	"delta.dc3"
 
