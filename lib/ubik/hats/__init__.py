@@ -11,6 +11,7 @@ from ubik.hats.build import BuildHat
 from ubik.hats.cache import CacheHat
 from ubik.hats.config import ConfigHat
 from ubik.hats.helper import HelperHat
+from ubik.hats.infradb import InfraDBHat
 from ubik.hats.package import PackageHat
 
 ALL_HATS = (
@@ -19,6 +20,7 @@ ALL_HATS = (
     CacheHat,
     BuildHat,
     PackageHat,
+    InfraDBHat,
     )
 
 def hatter(argv, config=None, options=None):

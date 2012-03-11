@@ -17,7 +17,7 @@ class InfraDBDriverDNS(object):
     >>>
 
     """
-    def __init__(self):
+    def __init__(self, domain=None):
         """Initialize a new DNS InfraDB Driver
 
         >>> idb=InfraDBDriverDNS()
@@ -41,7 +41,7 @@ class InfraDBDriverDNS(object):
         else:
             return answer
         return None
-    
+
     def _query_txt(self, query):
         """Query resolver for TXT record and return a list of strings"""
         answer = self._query(query, 'TXT')
@@ -108,7 +108,7 @@ class InfraDBDriverDNS(object):
             if svcs:
                 host['services'] = svcs
             return host
-        
+
         return None
 
     def lookup_service(self, query):
@@ -143,7 +143,7 @@ class InfraDBDriverDNS(object):
             if txt_list:
                 svc["hosts"] = txt_list
             return svc
-        
+
         return None
 
     def resolve_service(self, query):

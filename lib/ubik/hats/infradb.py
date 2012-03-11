@@ -19,93 +19,67 @@ class InfraDBHat(BaseHat):
     @staticmethod
     def areyou(string):
         "Confirm or deny whether I am described by string"
-        if string == 'hosts':
+        if string == 'hosts' or string == 'services':
             return True
         return False
 
-    def __init__(self, args, config=None, options=None):
-        super(InfraDBHat, self).__init__(args, config, options)
-        self.args = args
-        import pdb; pdb.set_trace()
-
-        cache_dir = os.path.expanduser(self.config.get('cache','dir'))
-        self.cache = ubik.cache.UbikPackageCache(cache_dir)
-
-    def run(self):
-        if len(self.args) == 0:
-            self.args.insert(0, 'ls')
+    def __init__(self, argv, config=None, options=None):
+        super(InfraDBHat, self).__init__(argv, config, options)
+        self.args = argv[:]
 
         try:
-            while len(self.args) > 0:
-                command = self.args.pop(0)
-                if command in self.command_map:
-                    self.command_map[command](self)
-                elif command == 'help':
-                    self.help(self.output)
-                else:
-                    raise HatException("Unknown cache command: %s" % command)
-        except ubik.cache.CacheException as e:
+            driver = config.get('infradb', 'driver')
+        except ubik.config.NoOptionError:
+            driver = 'dns'
+
+        confstr = None
+        try:
+            if driver == 'dns':
+                confstr = config.get('infradb', 'domain')
+            elif driver == 'json':
+                confstr = config.get('infradb', 'jsonfile')
+        except ubik.config.NoOptionError:
+            pass
+
+        self.idb = ubik.infra.db.InfraDB(driver, confstr)
+
+    def run(self):
+        try:
+            command = self.argv[0]
+            if command in self.command_map:
+                self.command_map[command](self, self.argv[1:])
+            elif command == 'help':
+                self.help(self.output)
+            else:
+                raise HatException("Unknown command: %s" % command)
+        except ubik.infra.db.InfraDBException as e:
             raise HatException(str(e))
 
-    # cache sub-commands
-    # these functions are expected to consume self.args
-    def add(self):
-        '''cache add FILE
+    def hosts(self, args):
+        """hosts SERVICE [ SERVICE ... ]
 
-        Adds FILE to the package cache.'''
-        i = 0
-        for filepath in self.args:
-            i += 1
-            if filepath == ';':
-                break
-            self.cache.add(filepath)
-        del self.args[:i]
+        Print the hosts defined for SERVICE.
+        """
+        if len(args) == 0:
+            self.help(self.output)
+        else:
+            for service in self.idb.services(args):
+                for host in sorted(service.hosts()):
+                    print >>self.output, unicode(host)
 
-    def ls(self):
-        '''cache [ ls [ GLOB ] ]
+    def services(self, args):
+        '''services [ DOMAIN ... ]
 
-        Display the contents of the cache, potentially filtered by GLOB.
+        Display the list of services.  If specified, the query is restricted to
+        one or more partially qualified sub domains.
         '''
-        if len(self.args) == 0:
-            self.args.insert(0, '*')
-        i = 0
-        for glob in self.args:
-            i += 1
-            for pkg in self.cache.list(glob):
-                print pkg["filename"]
-        del self.args[:i]
+        for service in self.idb.list_services(args):
+            print >>self.output, service
 
-    def prune(self):
-        '''cache prune
-
-        Prune contents of cache according to cache.keep_packages setting.
-        Also tidies the index by removing packages that have been deleted
-        on disk.
-        '''
-        self.cache.prune()
-
-    def remove(self):
-        '''cache remove FILENAME
-
-        Find and remove the file named FILENAME from the package cache.'''
-        i = 0
-        for filepath in self.args:
-            i += 1
-            if filepath == ';':
-                break
-            self.cache.remove(filepath)
-        del self.args[:i]
-
-    command_list = ( add, ls, prune, remove )
+    command_list = ( hosts, services )
     command_map = {
-        'add':      add,
-        'del':      remove,
-        'delete':   remove,
-        'list':     ls,
-        'ls':       ls,
-        'prune':    prune,
-        'remove':   remove,
-        'rm':       remove,
+        'hosts':    hosts,
+        'services': services,
     }
 
 if __name__ == '__main__':

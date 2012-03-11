@@ -7,7 +7,7 @@ class InfraDBException(Exception):
     pass
 
 class InfraDB(object):
-    def __init__(self, type='json', confstr=None):
+    def __init__(self, type=None, confstr=None):
         """Create an InfraDB object
 
         An InfraDB uses some sort of database-ish driver to map one real
