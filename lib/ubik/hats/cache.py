@@ -23,9 +23,9 @@ class CacheHat(BaseHat):
             return True
         return False
 
-    def __init__(self, args, config=None, options=None):
-        super(CacheHat, self).__init__(args, config, options)
-        self.args = args
+    def __init__(self, argv, config=None, options=None):
+        super(CacheHat, self).__init__(argv, config, options)
+        self.args = argv[1:]
 
         cache_dir = os.path.expanduser(self.config.get('cache','dir'))
         self.cache = ubik.cache.UbikPackageCache(cache_dir)

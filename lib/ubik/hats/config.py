@@ -22,9 +22,9 @@ class ConfigHat(BaseHat):
             return True
         return False
 
-    def __init__(self, args, config=None, options=None):
-        super(ConfigHat, self).__init__(args, config, options)
-        self.args = args
+    def __init__(self, argv, config=None, options=None):
+        super(ConfigHat, self).__init__(argv, config, options)
+        self.args = argv[1:]
 
     def run(self):
         if len(self.args) == 0:

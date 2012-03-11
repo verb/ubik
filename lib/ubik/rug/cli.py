@@ -61,8 +61,7 @@ def main(args=None):
     args = init_cli(args)
 
     # Try to figure out what hat we're using here
-    hatstr = args.pop(0)
-    hat = ubik.hats.hatter(hatstr, args, config, options)
+    hat = ubik.hats.hatter(args, config, options)
     if hat:
         try:
             hat.run()

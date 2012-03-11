@@ -7,11 +7,11 @@ log.debug("Logging initialized")
 class HatException(Exception):
     pass
 
-from .build import BuildHat
-from .cache import CacheHat
-from .config import ConfigHat
-from .helper import HelperHat
-from .package import PackageHat
+from ubik.hats.build import BuildHat
+from ubik.hats.cache import CacheHat
+from ubik.hats.config import ConfigHat
+from ubik.hats.helper import HelperHat
+from ubik.hats.package import PackageHat
 
 ALL_HATS = (
     HelperHat,
@@ -21,15 +21,25 @@ ALL_HATS = (
     PackageHat,
     )
 
-def hatter(hat_str, args, config=None, options=None):
-    '''Given an arbitrary string, attempt to figure out which hat we should
-    wear, then initialize and return an object instance.'''
+def hatter(argv, config=None, options=None):
+    """Given an arbitrary command string, attempt to figure out which hat we should
+    wear, then initialize and return an object instance.
 
-    log.debug("Looking for hat %s" % hat_str)
+    >>> hatter(('help',))
+    <Hat Object: help>
+    >>> hatter(('help','config'))
+    <Hat Object: help>
+    >>> hatter(('config',))
+    <Hat Object: config>
+    >>>
+
+    """
+
+    log.debug("Looking for hat %s" % argv[0])
     for hat in ALL_HATS:
-        if hat.areyou(hat_str):
-            log.debug("%s matched hat %s" % (hat_str, hat.__name__))
-            return hat((hat_str, args), config, options)
+        if hat.areyou(argv[0]):
+            log.debug("%s matched hat %s" % (argv[0], hat.__name__))
+            return hat(argv, config, options)
 
     # Could not find a hat
     return None

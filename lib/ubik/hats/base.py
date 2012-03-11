@@ -17,8 +17,9 @@ class BaseHat(object):
     def areyou(string):
         return False
 
-    def __init__(self, args, config=None, options=None):
-        log.debug("Initialize args %s" % repr(args))
+    def __init__(self, argv, config=None, options=None):
+        log.debug("Initialize args %s" % repr(argv))
+        self.argv = argv
         self.config = config
         self.options = options
         if self.options:
@@ -28,6 +29,9 @@ class BaseHat(object):
         if not self.config:
             self.config = ubik.config.UbikConfig()
             self.config.read(self.config_file, ubik.defaults.GLOBAL_CONFIG_FILE)
+
+    def __repr__(self):
+        return "<Hat Object: %s>" % self.name
 
     def help(self, out):
         '''
