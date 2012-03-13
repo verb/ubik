@@ -1,4 +1,7 @@
 *.swp
 *.pyc
 *.wpu
+MANIFEST
+build/
+dist/
 tests/out
