@@ -24,6 +24,7 @@ build_modules = [
     ['ant', 'ubik.fab.ant', 'build'],
     ['fab', 'ubik.fab.fab', 'build'],
     ['make', 'ubik.fab.make', 'build'],
+    ['distutils', 'ubik.fab.distutils', 'build'],
     # Post processing modules
     ['jettypathhack', 'ubik.fab.jettypathhack', 'hackthepath'],
     ['monit', 'ubik.fab.monit', 'write_monit_config'],
