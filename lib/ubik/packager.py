@@ -23,12 +23,38 @@ class PackagerError(Exception):
     pass
 
 def _split_version(combined_version):
-    version_release = combined_version.split('-')
+    """Utility function for splitting version-release strings.
+
+    version-release are required with RPM and supported with deb.  They allow
+    for multiple releases of a single version of software.  For example, 1.0-2
+    is the second release of the 1.0 version.
+
+    Since RPMs require a release, this function will add one if not specified.
+
+    >>> _split_version('1.0-2')
+    ('1.0', '2')
+    >>> _split_version('1.0')
+    ('1.0', '1')
+    >>>
+
+    """
+    version_release = tuple(combined_version.split('-'))
     if len(version_release) != 2:
         return (version_release[0], '1')
     return version_release
 
 def Package(configfile, env, pkgtype='deb'):
+    """Return the appropriate packager for a given pkgtype
+
+    >>> p=Package('tests/package.ini', builder.BuildEnv(), 'deb')
+    >>> isinstance(p, DebPackage)
+    True
+    >>> p=Package('tests/package.ini', builder.BuildEnv(), 'rpm')
+    >>> isinstance(p, RpmPackage)
+    True
+    >>>
+
+    """
     if pkgtype == 'deb':
         return DebPackage(configfile, env)
     elif pkgtype == 'rpm':
@@ -135,6 +161,22 @@ class BasePackage(object):
         print json.dumps(self._gen_filelist(), indent=4)
 
 class DebPackage(BasePackage):
+    """An object that packages a directory described by env into a deb file
+
+    >>> if not os.path.exists('tests/out'):
+    ...   os.mkdir('tests/out')
+    >>> os.chdir('tests/out')
+    >>> env=builder.BuildEnv(rootdir='../root')
+    >>> pkgr=DebPackage('../package.ini', env)
+    >>> isinstance(pkgr, DebPackage)
+    True
+    >>> pkg=pkgr.build('1.0')   #doctest: +ELLIPSIS
+    [localhost] ...
+    >>> os.path.basename(pkg)
+    'packager-test_1.0_amd64.deb'
+    >>>
+
+    """
     pkgtype = 'deb'
 
     def _write_deb_conffiles(self, filelist):
@@ -196,11 +238,15 @@ class DebPackage(BasePackage):
             os.mkdir(debdir)
 
         with open(os.path.join(debdir, 'md5sums'), 'w') as md5sums:
-            with cd(self.env.rootdir):
+            prevdir = os.getcwd()
+            os.chdir(self.env.rootdir)
+            try:
                 for filename, options in filelist:
                     if not options.get('dir') and not options.get('link'):
-                        md5str = local("md5sum '%s'" % filename).strip('\n')
-                        md5sums.write(md5str + '\n')
+                        md5str = local("md5sum '%s'" % filename, capture=True)
+                        print >>md5sums, md5str
+            finally:
+                os.chdir(prevdir)
 
     # Runs before DEBIAN/ is created
     def _write_fake_perms(self, filelist):
