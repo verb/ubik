@@ -157,8 +157,8 @@ class UbikPackageCache(object):
             raise CacheException("Missing filters for get")
 
         c = self.conn.execute('SELECT type,filename FROM packages WHERE ' +
-                              ' = ? AND '.join(where.keys()) + ' = ?;',
-                              where.values())
+                              ' GLOB ? AND '.join(where.keys()) + ' GLOB ?' + 
+                              ' ORDER BY added DESC;', where.values())
         r = c.fetchone()
         if r:
             cache_path = str(os.path.join(r['type'], r['filename']))

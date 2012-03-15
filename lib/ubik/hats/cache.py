@@ -62,6 +62,17 @@ class CacheHat(BaseHat):
 
     # TODO: add file command
 
+    def last(self):
+        '''cache last NAME
+
+        Returns the path to the latest package file for package NAME, as
+        determined by creation date. '''
+        if len(self.args) == 0:
+            self.args.insert(0, '*')
+        filename = self.cache.get(name=self.args.pop(0))
+        if filename:
+            print >>self.output, os.path.abspath(filename)
+
     def ls(self):
         '''cache [ ls [ GLOB ] ]
 
@@ -97,11 +108,12 @@ class CacheHat(BaseHat):
             self.cache.remove(filepath)
         del self.args[:i]
 
-    command_list = ( add, ls, prune, remove )
+    command_list = ( add, last, ls, prune, remove )
     command_map = {
         'add':      add,
         'del':      remove,
         'delete':   remove,
+        'last':     last,
         'list':     ls,
         'ls':       ls,
         'prune':    prune,
