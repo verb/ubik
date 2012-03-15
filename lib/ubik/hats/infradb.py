@@ -73,7 +73,8 @@ class InfraDBHat(BaseHat):
         Display the list of services.  If specified, the query is restricted to
         one or more partially qualified sub domains.
         '''
-        for service in self.idb.list_services(args):
+        service_list = self.idb.list_services(args)
+        for service in service_list:
             print >>self.output, service
 
     command_list = ( hosts, services )

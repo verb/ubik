@@ -45,15 +45,14 @@ class InfraDBDriverDNS(object):
     def _query_txt(self, query):
         """Query resolver for TXT record and return a list of strings"""
         answer = self._query(query, 'TXT')
+        txts = []
         if answer:
-            txts = []
             for record in answer:
                 # Each TXT record can have a list of strings delimitted by
                 # quotes.  e.g. '"one two" "three four"'
                 # This should be come ('one two', 'three four')
                 txts.extend([unicode(s) for s in record.strings])
-            return txts
-        return None
+        return txts
 
     def list_services(self, query=None):
         """Return a list of strings representing all services
@@ -67,6 +66,8 @@ class InfraDBDriverDNS(object):
         [u'mailserver', u'webserver']
         >>> sorted(idb.list_services('dc1'))
         [u'mailserver.dc1', u'webserver.dc1']
+        >>> sorted(idb.list_services('bogus'))
+        []
         >>>
 
         """
@@ -130,18 +131,17 @@ class InfraDBDriverDNS(object):
         """
         log.debug("Gathering info for service '%s'", query)
         svc = dict()
-        if (self._query_txt('_service.'+query) or
-            self._query_txt('_host.'+query)):
+        svc_list = self._query_txt('_service.' + query)
+        hst_list = self._query_txt('_host.' + query)
+        if svc_list or hst_list:
             svc['name'] = unicode(query)
 
         # If service exists, gather its attributes
         if svc:
-            txt_list = self._query_txt("_service."+query)
-            if txt_list:
-                svc["services"] = txt_list
-            txt_list = self._query_txt("_host."+query)
-            if txt_list:
-                svc["hosts"] = txt_list
+            if svc_list:
+                svc["services"] = svc_list
+            if hst_list:
+                svc["hosts"] = hst_list
             return svc
 
         return None
