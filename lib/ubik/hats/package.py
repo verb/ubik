@@ -1,8 +1,11 @@
 
 import logging
 import os.path
+import subprocess
+import tempfile
 
 import ubik.builder
+import ubik.cache
 import ubik.defaults
 import ubik.packager
 
@@ -31,7 +34,7 @@ class PackageHat(BaseHat):
         self.args = argv[1:]
 
     def run(self):
-        if len(self.args) != 2 or self.args[0] == 'help':
+        if self.args[0] == 'help':
             self.help(self.output)
         else:
             self.package()
@@ -40,15 +43,41 @@ class PackageHat(BaseHat):
     def package(self):
         '''package [ deb|rpm ] APP VERSION
 
-        Builds version VERSION of app APP, as directed by ini configuration
+        Builds version VERSION of app APP, as directed by ini configuration,
+        and add it to the package cache.
         '''
-        # First thing is to build the package
-        bob = ubik.builder.Builder(self.config, self.options.workdir)
-        bob.build_from_config(*self.args[0:2])
+        if len(self.args) > 2 and self.args[0] in PKGTYPES:
+            pkgtypes_to_build = (self.args.pop(0),)
+        else:
+            pkgtypes_to_build = PKGTYPES
+        name, version = self.args[0:2]
 
-        import pdb; pdb.set_trace()
-        for pkgtype in PKGTYPES:
-            pkgr = ubik.packager.Package(bob.pkgcfg, bob.env, pkgtype)
+        # First thing is to build the package
+        if self.options.workdir:
+            workdir = self.options.workdir
+        else:
+            workdir = tempfile.mkdtemp(prefix='packager-bob-')
+        bob = ubik.builder.Builder(self.config, workdir)
+        bob.build_from_config(name, version)
+
+        cache_dir = self.config.get('cache', 'dir')
+        cache = ubik.cache.UbikPackageCache(cache_dir)
+        for pkgtype in pkgtypes_to_build:
+            # After the build_from_config() call above, self.config will contain
+            # all of the configuration for this package
+            if self.config.has_section(pkgtype):
+                pkgr = ubik.packager.Package(bob.pkgcfg, bob.env, pkgtype)
+                pkgfile = pkgr.build(version)
+                log.debug("Successfully created package file %s", pkgfile)
+                cache.add(pkgfile, type=pkgtype, version=version)
+            else:
+                logf = log.info if len(pkgtypes_to_build) > 1 else log.error
+                logf("Config files does not specify package type '%s'",
+                     pkgtype)
+
+        if not (self.options.debug or self.options.workdir):
+            log.info("Removing working directory '%s'", workdir)
+            subprocess.check_call(('rm', '-r', workdir))
 
     command_list = ( package, )
 

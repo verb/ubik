@@ -60,6 +60,8 @@ class CacheHat(BaseHat):
             self.cache.add(filepath)
         del self.args[:i]
 
+    # TODO: add file command
+
     def ls(self):
         '''cache [ ls [ GLOB ] ]
 

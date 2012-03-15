@@ -2,6 +2,7 @@
 import copy
 import logging
 import os, os.path
+import subprocess
 import tempfile
 import urllib
 
@@ -100,6 +101,12 @@ class Builder(object):
                     (module, module, buildfunc))
                 log.debug("Running statement: " + module_statement)
                 exec(module_statement)
+
+    def clean(self):
+        if self.env.exists('builddir'):
+            subprocess.call(['rm', '-rf', self.env.builddir])
+        if self.env.exists('srcdir'):
+            subprocess.call(['rm', '-rf', self.env.srcdir])
 
     def get_config(self, pkgname):
         log.info(pkgname + ": Can we build it?")
