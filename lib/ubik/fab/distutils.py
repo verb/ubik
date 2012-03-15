@@ -4,6 +4,7 @@ import json
 import logging
 import os, os.path
 import shutil as sh
+import stat
 import subprocess
 import tempfile
 
@@ -12,7 +13,64 @@ from fabric.api import abort, cd, local, prompt, warn
 from ubik import builder, packager
 
 NAME = 'distutils'
+POSTINST_TEMPLATE = """#!/bin/sh
+set -e
+
+# Automatically added by ubik.fab.distutils:
+if which pycompile >/dev/null 2>&1; then
+        pycompile -p %(pkgname)s
+fi
+
+# End automatically added section"""
+PRERM_TEMPLATE = """#!/bin/sh
+set -e
+
+# Automatically added by ubik.fab.distutils:
+if which pyclean >/dev/null 2>&1; then
+        pyclean -p %(pkgname)s
+else
+        dpkg -L %(pkgname)s | grep \.py$ | while read file
+        do
+                rm -f "${file}"[co] >/dev/null
+        done
+fi
+
+# End automatically added section"""
+
 log = logging.getLogger(NAME)
+def _create_pycompile_scripts(scriptdir, config):
+    """Creates postinst/prerm scripts compatible with debian pycompile paradigm
+
+    >>> config = ConfigParser.SafeConfigParser()
+    >>> config.read('tests/package.ini')
+    ['tests/package.ini']
+    >>> scriptdir = 'tests/out/scripts'
+    >>> if os.path.exists(scriptdir):
+    ...     sh.rmtree(scriptdir)
+    >>> _create_pycompile_scripts(scriptdir, config)
+    >>> config.get('deb', 'postinst')
+    'tests/out/scripts/postinst'
+    >>> import hashlib
+    >>> md5 = hashlib.md5()
+    >>> with open(os.path.join(scriptdir, 'postinst')) as f:
+    ...     md5.update(f.read())
+    >>> md5.hexdigest()
+    '360984dd36c60df0e7bfdc1216af2f2d'
+    >>>
+
+    """
+    if not os.path.exists(scriptdir):
+        os.makedirs(scriptdir)
+    pkgname = config.get('package', 'name')
+
+    for script, templ in (('postinst', POSTINST_TEMPLATE),
+                          ('prerm', PRERM_TEMPLATE)):
+        if not config.has_option('deb', script):
+            script_path = os.path.join(scriptdir, script)
+            with open(script_path, 'a') as f:
+                print >>f, templ % {'pkgname': pkgname}
+            os.chmod(script_path, 0755)
+            config.set('deb', script, script_path)
 
 def _get_config(configfile='package.ini'):
     config = ConfigParser.SafeConfigParser()
@@ -74,6 +132,7 @@ def build(version, config, env):
                 pyver_args.extend(['--no-compile',
                                    '--install-layout',
                                    'deb'])
+                _create_pycompile_scripts(env.builddir, config)
         except ConfigParser.NoOptionError:
             pass
         subprocess.check_call(pyver_args, cwd=builddir)
