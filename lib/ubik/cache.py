@@ -104,10 +104,14 @@ class UbikPackageCache(object):
             command = ('dpkg-deb', '--showformat',
                        '${Package}\t${Architecture}\t${Version}',
                        '--show', filepath)
-            output = subprocess.check_output(command)
+            try:
+                output = subprocess.check_output(command)
+            except OSError as e:
+                raise CacheException("Error running dpkg-deb to inspect %s: %s"
+                                     % (filepath, str(e)))
             pkg.update(dict(zip(('name','arch','version'), output.split())))
         else:
-            raise CacheException("Package inspection failed")
+            raise CacheException("Not sure how to inspect pkg type " + pkg_type)
 
         return pkg
 
