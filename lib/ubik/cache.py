@@ -17,7 +17,7 @@ class UbikPackageCache(object):
 
     >>> u=UbikPackageCache('tests/out/cache')
     >>> u.add('tests/testpkg_1.0_all.deb')
-
+    >>> u.add('tests/testpkg_1.0_all.deb')
     >>> u.get(name='testpkg')
     'tests/out/cache/deb/testpkg_1.0_all.deb'
     >>> u.get(name='testpkg', version='1.0')
@@ -32,14 +32,14 @@ class UbikPackageCache(object):
     CacheException: Missing filters for get
 
     >>> from pprint import pprint
-    >>> pprint(u.list())
+    >>> pprint(u.list()) #doctest: +ELLIPSIS
     [{'added': ...,
       'arch': u'all',
       'filename': u'testpkg_1.0_all.deb',
       'name': u'testpkg',
       'type': u'deb',
       'version': u'1.0'}]
-    >>> pprint(u.list('testpkg_1.*'))
+    >>> pprint(u.list('testpkg_1.*')) #doctest: +ELLIPSIS
     [{'added': ...,
       'arch': u'all',
       'filename': u'testpkg_1.0_all.deb',
@@ -47,6 +47,7 @@ class UbikPackageCache(object):
       'type': u'deb',
       'version': u'1.0'}]
     >>> pprint(u.list(name='testpkg', arch='all', version='1.0', type='deb'))
+    ... #doctest: +ELLIPSIS
     [{'added': ...,
       'arch': u'all',
       'filename': u'testpkg_1.0_all.deb',
@@ -136,7 +137,7 @@ class UbikPackageCache(object):
 
         log.debug('Adding package %s to cache' % filename)
         with self.conn:
-            self.conn.execute('INSERT INTO packages '
+            self.conn.execute('REPLACE INTO packages '
                               '(name, version, type, arch, filename) VALUES '
                               '(:name, :version, :type, :arch, :filename);',
                               pkg)
@@ -156,8 +157,8 @@ class UbikPackageCache(object):
             raise CacheException("Missing filters for get")
 
         c = self.conn.execute('SELECT type,filename FROM packages WHERE ' +
-                              ' = ? AND '.join(where.keys()) + ' = ?;',
-                              where.values())
+                              ' GLOB ? AND '.join(where.keys()) + ' GLOB ?' + 
+                              ' ORDER BY added DESC;', where.values())
         r = c.fetchone()
         if r:
             cache_path = str(os.path.join(r['type'], r['filename']))

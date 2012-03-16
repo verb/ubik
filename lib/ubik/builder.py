@@ -33,6 +33,9 @@ build_modules = [
     ['symlinks', 'ubik.fab.symlinks', 'makelinks'],
 ]
 
+class BuildError(Exception):
+    pass
+
 class BuildEnv(object):
     def __init__(self, builddir='_build', rootdir='_root', srcdir='.'):
         self._dirs = {
@@ -117,11 +120,8 @@ class Builder(object):
             pkgcfg.readfp(urllib.urlopen(uri))
         except IOError as e:
             log.info("NO WE CAN'T!")
-            if not self.options.debug:
-                log.error('Error reading package config from ' + uri)
-                log.error(str(e))
-            else:
-                raise
+            raise BuildError('Error reading package config from %s: %s' % 
+                             (uri, str(e)))
         else:
             log.info("YES WE CAN!")
 
