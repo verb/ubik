@@ -1,10 +1,14 @@
 """DNS-backed InfraDB Driver"""
 
+import dns.exception
+import dns.name
 import dns.resolver
 import logging
 import os
 
 log = logging.getLogger('infra.dns')
+
+SVC_INDEX = '_service._services'
 
 class InfraDBDriverDNS(object):
     """InfraDB DNS Driver class
@@ -21,6 +25,9 @@ class InfraDBDriverDNS(object):
         """Initialize a new DNS InfraDB Driver
 
         >>> idb=InfraDBDriverDNS()
+        >>> idb=InfraDBDriverDNS('example.com.')
+        >>> idb.root
+        <DNS name example.com.>
         >>>
 
         """
@@ -31,6 +38,15 @@ class InfraDBDriverDNS(object):
                 self.resolver.port = int(os.environ['RUG_RESOLV_PORT'])
         else:
             self.resolver = dns.resolver.get_default_resolver()
+
+        if domain:
+            self.root = dns.name.Name(domain.split('.'))
+        else:
+            # Attempt to guess what my root is
+            try:
+                self.root = self.resolver.query('', 'NS').qname
+            except dns.exception.DNSException:
+                self.root = dns.name.Name([])
 
     def _query(self, query, qtype='A'):
         """Query resolver and return an answer object or None"""
@@ -54,12 +70,64 @@ class InfraDBDriverDNS(object):
                 txts.extend([unicode(s) for s in record.strings])
         return txts
 
+    def _txt_rel_str(self, answer):
+        """Extract a list of strings from a TXT answer record
+
+        This function appends tags to the list of string records where
+        possible in an attempt to make the relative to the current DNS domain.
+
+        >>> idb=InfraDBDriverDNS('example.com.')
+        >>> a=idb._query(SVC_INDEX + '.example.com.', 'TXT')
+        >>> sorted(idb._txt_rel_str(a))
+        [u'mailserver', u'webserver']
+        >>> a=idb._query(SVC_INDEX + '.dc1.example.com.', 'TXT')
+        >>> sorted(idb._txt_rel_str(a))
+        [u'mailserver.dc1', u'webserver.dc1']
+
+        >>> idb=InfraDBDriverDNS('dc2.example.com.')
+        >>> a=idb._query(SVC_INDEX + '.dc1.example.com.', 'TXT')
+        >>> sorted(idb._txt_rel_str(a))
+        [u'mailserver.dc1.example.com.', u'webserver.dc1.example.com.']
+
+        >>> idb._txt_rel_str(None)
+        []
+        """
+        txts = []
+        if answer:
+            assert isinstance(answer, dns.resolver.Answer)
+            for record in answer:
+                # Each TXT record can have a list of strings delimitted by
+                # quotes.  e.g. '"one two" "three four"'
+                # This should be come ('one two', 'three four')
+                txts.extend([unicode(s) for s in record.strings])
+
+            # There are two levels of parent() below because the TXT tags
+            # are always 2 steps removed from their "domain".  e.g.
+            #
+            # _service._services.example.com.  IN TXT "webserver"
+            # _service.webserver.example.com.  IN TXT "webserver.dc1"
+            # _host.webserver.example.com.     IN TXT "delta.dc3"
+            # _host.webserver.dc3.example.com. IN TXT "delta"
+            #
+            try:
+                domain = answer.canonical_name.parent().parent()
+            except dns.name.NoParent:
+                pass
+            else:
+                if self.root and not domain == self.root:
+                    # The answer is not already relative to our root,
+                    # so we need to append the relative tag
+                    tag = str(domain.relativize(self.root))
+                    txts = ["%s.%s" % (t, tag) for t in txts]
+
+        return txts
+
     def list_services(self, query=None):
         """Return a list of strings representing all services
 
         'query' is the optional subdomain
 
-        >>> idb=InfraDBDriverDNS()
+        >>> idb=InfraDBDriverDNS('example.com.')
         >>> sorted(idb.list_services())
         [u'mailserver', u'webserver']
         >>> sorted(idb.list_services(''))
@@ -71,12 +139,11 @@ class InfraDBDriverDNS(object):
         >>>
 
         """
-        rr = '_services'
         if query:
             suffix = '.' + query
-            return [s+suffix for s in self._query_txt(rr+suffix)]
+            return [s+suffix for s in self._query_txt(SVC_INDEX+suffix)]
         else:
-            return self._query_txt(rr)
+            return self._query_txt(SVC_INDEX)
 
     def lookup_host(self, query):
         """Look up a host based on partial name, return FQDN
@@ -105,7 +172,7 @@ class InfraDBDriverDNS(object):
             if answer and len(answer) > 0:
                 host['hardware'] = unicode(answer[0].cpu)
                 host['os'] = unicode(answer[0].os)
-            svcs = self._query_txt("_services."+query)
+            svcs = self._query_txt("_service."+query)
             if svcs:
                 host['services'] = svcs
             return host
@@ -115,33 +182,35 @@ class InfraDBDriverDNS(object):
     def lookup_service(self, query):
         """Look up a service and return its attributes as a dict
 
-        >>> idb=InfraDBDriverDNS()
-        >>> svc=idb.lookup_service('webserver')
-        >>> svc['name']
-        u'webserver'
-        >>> sorted(svc['services'])
-        [u'webserver.dc1', u'webserver.dc2']
-        >>> svc['hosts']
+        >>> idb=InfraDBDriverDNS('example.com.')
+        >>> from pprint import pprint
+
+        >>> s=idb.lookup_service('webserver')
+        >>> sorted(s['hosts'])
         [u'delta.dc3']
-        >>> len(idb.lookup_service('webserver.dc1')['hosts'])
-        2
+        >>> sorted(s['services'])
+        [u'webserver.dc1', u'webserver.dc2']
+
+        >>> s=idb.lookup_service('webserver.dc1')
+        >>> sorted(s['hosts'])
+        [u'alpha.dc1', u'bravo.dc1']
+
         >>> idb.lookup_service('bogus')
         >>>
-
         """
         log.debug("Gathering info for service '%s'", query)
         svc = dict()
-        svc_list = self._query_txt('_service.' + query)
-        hst_list = self._query_txt('_host.' + query)
-        if svc_list or hst_list:
+        svc_ans = self._query('_service.' + query, 'TXT')
+        hst_ans = self._query('_host.' + query, 'TXT')
+        if svc_ans or hst_ans:
             svc['name'] = unicode(query)
 
         # If service exists, gather its attributes
         if svc:
-            if svc_list:
-                svc["services"] = svc_list
-            if hst_list:
-                svc["hosts"] = hst_list
+            if svc_ans:
+                svc["services"] = self._txt_rel_str(svc_ans)
+            if hst_ans:
+                svc["hosts"] = self._txt_rel_str(hst_ans)
             return svc
 
         return None
@@ -149,7 +218,7 @@ class InfraDBDriverDNS(object):
     def resolve_service(self, query):
         """Resolve a service to a list of hosts
 
-        >>> idb=InfraDBDriverDNS()
+        >>> idb=InfraDBDriverDNS('example.com.')
         >>> sorted(idb.resolve_service('webserver'))
         [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
         >>> sorted(idb.resolve_service('mailserver'))

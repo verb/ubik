@@ -17,26 +17,28 @@ $ORIGIN example.com.
 $ORIGIN alpha.dc1.example.com.
 @			IN	A		127.0.1.1
 @			IN	HINFO	"hardware_tag" "os_tag"
-_services   IN  TXT 	"webserver"
-_services   IN  TXT 	"mailserver"
+_service    IN  TXT 	"webserver"
+_service    IN  TXT 	"mailserver"
 $ORIGIN bravo.dc1.example.com.
 @			IN	A		127.0.1.2
 @			IN	HINFO	"hardware_tag" "os_tag"
-_services   IN  TXT 	"webserver"
+_service    IN  TXT 	"webserver"
 $ORIGIN charlie.dc2.example.com.
 @			IN	A		127.0.1.3
 @			IN	HINFO	"hardware_tag" "os_tag"
-_services   IN  TXT 	"webserver"
-_services   IN  TXT 	"mailserver"
+_service    IN  TXT 	"webserver"
+_service	IN  TXT 	"mailserver"
 $ORIGIN delta.dc3.example.com.
 @			IN	A		127.0.1.4
 @			IN	HINFO	"hardware_tag" "os_tag"
-_services   IN  TXT 	"webserver"
+_service	IN  TXT 	"webserver"
 
+; Throw a CNAME into the mix because it makes things difficult
 webserver.example.com.	IN	CNAME	ns.
+
 $ORIGIN _services.example.com.
-@			IN	TXT	"webserver"
-@			IN	TXT	"mailserver"
+_service	IN	TXT	"webserver"
+_service	IN	TXT	"mailserver"
 $ORIGIN mailserver.example.com.
 _service	IN	TXT	"mailserver.dc1"
 _service	IN	TXT	"mailserver.dc2"
@@ -48,24 +50,24 @@ $ORIGIN broken.example.com.
 _service	IN	TXT	"bogus"
 
 $ORIGIN _services.dc1.example.com.
-@			IN	TXT	"webserver"
-@			IN	TXT	"mailserver"
+_service	IN	TXT	"webserver"
+_service	IN	TXT	"mailserver"
 $ORIGIN mailserver.dc1.example.com.
-_host		IN	TXT	"alpha.dc1"
+_host		IN	TXT	"alpha"
 $ORIGIN webserver.dc1.example.com.
-_host		IN	TXT	"alpha.dc1"
-_host		IN	TXT	"bravo.dc1"
+_host		IN	TXT	"alpha"
+_host		IN	TXT	"bravo"
 
 $ORIGIN _services.dc2.example.com.
-@			IN	TXT	"webserver"
-@			IN	TXT	"mailserver"
+_service	IN	TXT	"webserver"
+_service	IN	TXT	"mailserver"
 $ORIGIN mailserver.dc2.example.com.
-_host		IN	TXT	"charlie.dc2"
+_host		IN	TXT	"charlie"
 $ORIGIN webserver.dc2.example.com.
-_host		IN	TXT	"charlie.dc2"
+_host		IN	TXT	"charlie"
 
 $ORIGIN _services.dc3.example.com.
-@			IN	TXT	"webserver"
+_service	IN	TXT	"webserver"
 $ORIGIN webserver.dc3.example.com.
-_host		IN	TXT	"delta.dc3"
+_host		IN	TXT	"delta"
 
