@@ -50,8 +50,6 @@ class InfraDBDriverDNS(object):
 
     def _query(self, query, qtype='A'):
         """Query resolver and return an answer object or None"""
-        if self.root:
-            query = dns.name.Name(query.split('.')).derelativize(self.root)
         try:
             answer = self.resolver.query(query, qtype, tcp=False)
             # dnspython doesn't fallback to TCP
