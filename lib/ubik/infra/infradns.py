@@ -50,8 +50,13 @@ class InfraDBDriverDNS(object):
 
     def _query(self, query, qtype='A'):
         """Query resolver and return an answer object or None"""
+        if self.root:
+            query = dns.name.Name(query.split('.')).derelativize(self.root)
         try:
-            answer = self.resolver.query(query, qtype)
+            answer = self.resolver.query(query, qtype, tcp=False)
+            # dnspython doesn't fallback to TCP
+            if len(answer) >= 13:
+                answer = self.resolver.query(query, qtype, tcp=True)
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
             pass
         else:
@@ -139,6 +144,8 @@ class InfraDBDriverDNS(object):
         >>>
 
         """
+        # TODO: this should use _txt_rel_str instead of _query_txt
+        # in order to support relative roots
         if query:
             suffix = '.' + query
             return [s+suffix for s in self._query_txt(SVC_INDEX+suffix)]
