@@ -364,7 +364,7 @@ class DebPackage(BasePackage):
 class RpmPackage(BasePackage):
     pkgtype = 'rpm'
 
-    # spec is a file-like object
+    # 'spec' is a file-like object
     def _write_rpm_spec(self, spec, version):
         config = self.config
         (version, release) = _split_version(version)

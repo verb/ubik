@@ -12,7 +12,7 @@ import ubik.packager
 from ubik.hats import HatException
 from ubik.hats.base import BaseHat
 
-log = logging.getLogger('ubik.hats.build')
+log = logging.getLogger('ubik.hats.package')
 
 PKGTYPES = ('deb', 'rpm')
 
@@ -46,7 +46,9 @@ class PackageHat(BaseHat):
         Builds version VERSION of app APP, as directed by ini configuration,
         and add it to the package cache.
         '''
-        if len(self.args) > 2 and self.args[0] in PKGTYPES:
+        if self.argv[0] in PKGTYPES:
+            pkgtypes_to_build = (self.argv[0],)
+        elif len(self.args) > 2 and self.args[0] in PKGTYPES:
             pkgtypes_to_build = (self.args.pop(0),)
         else:
             pkgtypes_to_build = PKGTYPES

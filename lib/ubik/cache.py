@@ -9,6 +9,12 @@ import subprocess
 
 log = logging.getLogger('ubik.cache')
 
+INSPECT_CMD_TAB = {
+    'deb': ('dpkg-deb', '--showformat',
+            '${Package}\t${Architecture}\t${Version}', '--show'),
+    'rpm': ('rpm', '-q', '--qf', '%{NAME}\t%{ARCH}\t%{VERSION}', '-p'),
+}
+
 class CacheException(Exception):
     pass
 
@@ -101,19 +107,17 @@ class UbikPackageCache(object):
                 pkg_type = 'rpm'
         pkg = {'type': pkg_type}
 
-        if pkg_type == 'deb':
-            command = ('dpkg-deb', '--showformat',
-                       '${Package}\t${Architecture}\t${Version}',
-                       '--show', filepath)
+        if pkg_type in ('deb', 'rpm'):
+            command = INSPECT_CMD_TAB[pkg_type] + (filepath,)
             try:
                 process = subprocess.Popen(command, stdout=subprocess.PIPE)
             except OSError as e:
-                raise CacheException("Error running dpkg-deb to inspect %s: %s"
-                                     % (filepath, str(e)))
+                raise CacheException("Error running %s to inspect %s: %s"
+                                     % (command[0], filepath, str(e)))
             else:
                 output = process.communicate()[0]
                 if process.poll():
-                    raise CacheException("dpkg-deb unsuccessful exit")
+                    raise CacheException("%s unsuccessful exit" % command[0])
             pkg.update(dict(zip(('name','arch','version'), output.split())))
         else:
             raise CacheException("Not sure how to inspect pkg type " + pkg_type)
