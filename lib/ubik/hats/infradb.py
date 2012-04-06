@@ -74,7 +74,7 @@ class InfraDBHat(BaseHat):
         one or more partially qualified sub domains.
         '''
         service_list = self.idb.list_services(args)
-        for service in service_list:
+        for service in sorted(service_list):
             print >>self.output, service
 
     command_list = ( hosts, services )
