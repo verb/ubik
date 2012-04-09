@@ -63,10 +63,10 @@ class CacheHat(BaseHat):
     # TODO: add file command
 
     def last(self):
-        '''cache last NAME
+        '''cache last [ NAME ]
 
         Returns the path to the latest package file for package NAME, as
-        determined by creation date. '''
+        determined by creation date. Defaults to all packages.'''
         if len(self.args) == 0:
             self.args.insert(0, '*')
         filename = self.cache.get(name=self.args.pop(0))
