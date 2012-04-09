@@ -39,7 +39,7 @@ def hatter(argv, config=None, options=None):
 
     log.debug("Looking for hat %s" % argv[0])
     for hat in ALL_HATS:
-        if hat.areyou(argv[0]):
+        if hat.areyou(argv[0]) or hat.name == argv[0]:
             log.debug("%s matched hat %s" % (argv[0], hat.__name__))
             return hat(argv, config, options)
 

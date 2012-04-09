@@ -40,8 +40,9 @@ class BaseHat(object):
         command_map
         '''
 
+        log.debug("Using help function from base class")
+        help_list = []
         if len(self.args) > 0 and hasattr(self, 'command_map'):
-            help_list = []
             i = 0
             for arg in self.args:
                 i += 1
@@ -50,7 +51,8 @@ class BaseHat(object):
                 if arg in self.command_map:
                     help_list.append(self.command_map[arg])
             del self.args[:i]
-        else:
+
+        if not help_list:
             help_list = self.command_list
 
             print >>out
