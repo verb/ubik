@@ -82,3 +82,25 @@ class BaseHat(object):
         'Register command line options with this hat'
         self.options = options
 
+
+    ### Utility methods for hats
+    #
+    # These snippets perform tasks common to multiple hats, but will
+    # not be used by all subclassed hats
+
+    def _get_infradb(self):
+        try:
+            driver = self.config.get('infradb', 'driver')
+        except ubik.config.NoOptionError:
+            driver = 'dns'
+
+        confstr = None
+        try:
+            if driver == 'dns':
+                confstr = self.config.get('infradb', 'domain')
+            elif driver == 'json':
+                confstr = self.config.get('infradb', 'jsonfile')
+        except ubik.config.NoOptionError:
+            pass
+
+        return ubik.infra.db.InfraDB(driver, confstr)

@@ -10,6 +10,7 @@ class HatException(Exception):
 from ubik.hats.build import BuildHat
 from ubik.hats.cache import CacheHat
 from ubik.hats.config import ConfigHat
+from ubik.hats.deploy import DeployHat
 from ubik.hats.helper import HelperHat
 from ubik.hats.infradb import InfraDBHat
 from ubik.hats.package import PackageHat
@@ -21,6 +22,7 @@ ALL_HATS = (
     BuildHat,
     PackageHat,
     InfraDBHat,
+    DeployHat,
     )
 
 def hatter(argv, config=None, options=None):

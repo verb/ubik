@@ -19,9 +19,7 @@ class InfraDBHat(BaseHat):
     @staticmethod
     def areyou(string):
         "Confirm or deny whether I am described by string"
-        if string == 'hosts' or string == 'services':
-            return True
-        return False
+        return string in ('hosts', 'services')
 
     def __init__(self, argv, config=None, options=None):
         super(InfraDBHat, self).__init__(argv, config, options)
