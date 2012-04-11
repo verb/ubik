@@ -3,6 +3,14 @@ import logging
 
 log = logging.getLogger('infra.db')
 
+OS_PKGTYPE_MAP = {
+    'DEFAULT':  'deb',
+    'centos':   'rpm',
+    'debian':   'deb',
+    'redhat':   'rpm',
+    'ubuntu':   'deb',
+}
+
 class InfraDBException(Exception):
     pass
 
@@ -177,8 +185,45 @@ class InfraHost(InfraObject):
     >>>
 
     """
+    def __init__(self, attr, driver):
+        """Initialize an InfraHost
+
+        In addition to parameters handled by InfraObject, InfraHosts also have
+        'hardware' and 'os' tags.
+
+        >>> db=InfraDB('json', 'tests/infradb.json')
+        >>> ih=db.host('alpha.dc1')
+        >>> ih._hardware
+        u'hardware_tag'
+        >>> ih._os
+        u'os_tag'
+        >>>
+
+        """
+        super(InfraHost, self).__init__(attr, driver)
+        self._hardware = attr.get('hardware', None)
+        self._os = attr.get('os', None)
+
     def __repr__(self):
         return "'InfraHost: %s'" % self._name
+
+    def pkgtype(self):
+        """Return the type of system packages used by this host
+
+        This is determined by looking up the os tag in a dict, but should
+        probably be moved to a configuration table.
+
+        >>> db=InfraDB('json', 'tests/infradb.json')
+        >>> db.host('alpha.dc1').pkgtype()
+        'deb'
+        >>>
+
+        """
+        if self._os:
+            for os_str in OS_PKGTYPE_MAP:
+                if os_str in self._os:
+                    return OS_PKGTYPE_MAP[os_str]
+        return OS_PKGTYPE_MAP['DEFAULT']
 
     def services(self):
         """Figure out what services run on this host
