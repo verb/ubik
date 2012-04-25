@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
+import ConfigParser
 import StringIO
 import logging
 import sys
 import textwrap
+import urllib
 
 import ubik.defaults
 
@@ -88,7 +90,58 @@ class BaseHat(object):
     # These snippets perform tasks common to multiple hats, but will
     # not be used by all subclassed hats
 
+    def _add_package_config(self, pkgname):
+        '''Look up the package config for pkgname and adds to running config
+
+        Reading multiple package configs can result in undesirable behavior 
+        due to the additive nature of reading multiple configs.  That is,
+        subsequent configs may not entirely replace prior configs and result
+        undesirable side effects.
+
+        As such, calling this method after at least one successful package
+        config read is intentionally made a no-op.
+        '''
+        # I'm not sure here whether it would be better to return a new 
+        # ConfigParser object or to add the package config to self.config
+        if self.config.has_option('package', 'name'):
+            log.debug("Attempt to add config from multiple packages.")
+            return
+
+        uri = '/'.join((self.config.get('builder','iniuri'), pkgname+'.ini'))
+        log.debug('Looking for package config at uri ' + uri)
+        try:
+            self.config.readfp(urllib.urlopen(uri))
+        except IOError as e:
+            log.info('Error reading package config from %s: %s', uri, str(e))
+            raise e
+
+    def _get_package_cache(self):
+        '''Return the appropriate ubik.cache.UbikPackageCache object
+
+        This method will return a previously initialized UbikPackageCache 
+        object.  If one doesn't exist, it will create one based on config file
+        values.
+        '''
+        try:
+            return self.package_cache
+        except AttributeError:
+            pass
+
+        cache_dir = self.config.get('cache', 'dir')
+        self.package_cache = ubik.cache.UbikPackageCache(cache_dir)
+        return self.package_cache
+
     def _get_infradb(self):
+        '''Return the appropriate ubik.infra.db.InfraDB object
+
+        This method will return a previously initialized InfraDB object.  If
+        one doesn't exist, it will create one based on config file values.
+        '''
+        try:
+            return self.idb
+        except AttributeError:
+            pass
+
         try:
             driver = self.config.get('infradb', 'driver')
         except ubik.config.NoOptionError:
@@ -103,4 +156,5 @@ class BaseHat(object):
         except ubik.config.NoOptionError:
             pass
 
-        return ubik.infra.db.InfraDB(driver, confstr)
+        self.idb = ubik.infra.db.InfraDB(driver, confstr)
+        return self.idb

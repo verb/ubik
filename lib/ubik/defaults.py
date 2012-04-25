@@ -9,6 +9,7 @@ GLOBAL_CONFIG_FILE = '/etc/ubik.ini'
 config_defaults = {
     "builder.iniuri": "https://deploy/ini",
     "cache.dir":    "~/.rug/cache",
+    "deploy.user": "prod",
     "infradb.driver": "dns",
 }
 

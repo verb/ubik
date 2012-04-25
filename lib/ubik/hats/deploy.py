@@ -9,12 +9,19 @@ import ubik.cache
 import ubik.defaults
 import ubik.packager
 
+from fabric.api import local, prompt, put, run, settings
+from fabric.state import connections
+
 from ubik.hats import HatException
 from ubik.hats.base import BaseHat
 
 log = logging.getLogger('ubik.hats.deploy')
 
 PKGTYPES = ('deb', 'rpm')
+PKG_INSTALL_CMD = {
+    'deb': "fakeroot dpkg -i",
+    'rpm': "rpm -U --oldpackage",
+}
 
 class DeployHat(BaseHat):
     "Deployer Hat"
@@ -44,7 +51,6 @@ class DeployHat(BaseHat):
         Deploys an application to a list of hosts.  If hosts are omitted, 
         attempts to determine host list automatically.
         '''
-        import pdb; pdb.set_trace()
         name, version = self.args[0:2]
 
         # Determine receiving hosts
@@ -61,33 +67,79 @@ class DeployHat(BaseHat):
                 pass
         if not hosts:
             raise HatException("Could not determine hosts for deploy")
+        log.debug("hosts to deploy: %s", hosts)
+
+        # Determine the package types we need
+        pkgpath = dict.fromkeys([h.pkgtype() for h in hosts])
+        log.debug("pkg types to deploy: %s", pkgpath.keys())
         
-        # First thing is to build the deploy
-        if self.options.workdir:
-            workdir = self.options.workdir
-        else:
-            workdir = tempfile.mkdtemp(prefix='deployer-bob-')
-        bob = ubik.builder.Builder(self.config, workdir)
-        bob.build_from_config(name, version)
+        cache = self._get_package_cache()
+        self._add_package_config(name)
+        for pkgtype in pkgpath:
+            filename = cache.get(name=name, version=version, type=pkgtype)
 
-        cache_dir = self.config.get('cache', 'dir')
-        cache = ubik.cache.UbikDeployCache(cache_dir)
-        for pkgtype in pkgtypes_to_build:
-            # After the build_from_config() call above, self.config will contain
-            # all of the configuration for this deploy
-            if self.config.has_section(pkgtype):
-                pkgr = ubik.deployr.Deploy(bob.pkgcfg, bob.env, pkgtype)
-                pkgfile = pkgr.build(version)
-                log.debug("Successfully created deploy file %s", pkgfile)
-                cache.add(pkgfile, type=pkgtype, version=version)
+            # 'name' could be the package config name rather than the actual
+            # package name, so we should try dereferencing using build config
+            if not filename:
+                try:
+                    pkgname = self.config.get('package', 'name')
+                    filename = cache.get(name=pkgname, version=version, 
+                                         type=pkgtype)
+                except:
+                    pass
+
+            if filename:
+                pkgpath[pkgtype] = filename
             else:
-                logf = log.info if len(pkgtypes_to_build) > 1 else log.error
-                logf("Config files does not specify deploy type '%s'",
-                     pkgtype)
+                log.error("Package for %s doesn't exist.  Please build.",
+                          pkgtype)
 
-        if not (self.options.debug or self.options.workdir):
-            log.info("Removing working directory '%s'", workdir)
-            subprocess.check_call(('rm', '-r', workdir))
+        print >>self.output, "About to deploy the following packages:"
+        for pkgname in pkgpath.values():
+            print >>self.output, "\t%s" % pkgname
+        print >>self.output, "To the following hosts:"
+        for host in hosts:
+            print >>self.output, "\t%s" % host
+        yesno = prompt("Proceed?", default='No')
+        if yesno.strip()[0].upper() != 'Y':
+            return
+
+        deploy_user = self.config.get('deploy', 'user')
+        try:
+            for host in hosts:
+                host_pkgtype = host.pkgtype()
+                host_pkgpath = pkgpath[host_pkgtype]
+                host_pkgfilename = os.path.basename(host_pkgpath)
+
+                with settings(host_string=str(host), user=deploy_user):
+                    fab_output = run("mkdir -p pkgs/", shell=False)
+                    if fab_output:
+                        print >>self.output, fab_output
+                    put(host_pkgpath, "pkgs/")
+
+                    pkg_delete = True
+                    if host_pkgtype in PKG_INSTALL_CMD.keys():
+                        output = run(PKG_INSTALL_CMD[host_pkgtype] + " pkgs/%s"
+                                     % host_pkgfilename, shell=False)
+                    else:
+                        fab_output = ("Unable to determine install command for "
+                                      "package type %s.  Leaving package "
+                                      "~%s/pkgs/%s for manual install." %
+                                      (host_pkgtype, deploy_user, 
+                                       host_pkgfilename))
+                        pkg_delete = False
+                    if fab_output:
+                        print >>self.output, fab_output
+
+                    if pkg_delete:
+                        fab_output = run("rm pkgs/" + host_pkgfilename, shell=False)
+                        if fab_output:
+                            print >>self.output, fab_output
+        finally:
+            # TODO: replace with disconnect_all() w/ fabric 0.9.4+
+            for key in connections.keys():
+                connections[key].close()
+                del connections[key]
 
     command_list = ( deploy, )
 
