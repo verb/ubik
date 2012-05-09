@@ -170,7 +170,7 @@ class UbikPackageCache(object):
         r = c.fetchone()
         if r:
             cache_path = str(os.path.join(r['type'], r['filename']))
-            return os.path.relpath(os.path.join(self.cache_dir, cache_path))
+            return os.path.join(self.cache_dir, cache_path)
         return None
 
     def list(self, filename='*', **kwargs):
