@@ -14,6 +14,7 @@ from ubik.hats.deploy import DeployHat
 from ubik.hats.helper import HelperHat
 from ubik.hats.infradb import InfraDBHat
 from ubik.hats.package import PackageHat
+from ubik.hats.supervisor import SupervisorHat
 
 ALL_HATS = (
     HelperHat,
@@ -23,6 +24,7 @@ ALL_HATS = (
     PackageHat,
     InfraDBHat,
     DeployHat,
+    SupervisorHat,
     )
 
 def hatter(argv, config=None, options=None):

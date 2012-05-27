@@ -59,7 +59,7 @@ class HelperHat(BaseHat):
         print >>out
 
         for hat in sorted(ubik.hats.ALL_HATS, key=lambda h: h.name):
-            print >>out, "%-8s - %s" % (hat.name, hat.desc)
+            print >>out, "%-9s - %s" % (hat.name, hat.desc)
         print >>out
 
     def _print_hat_help(self, out, whut):
