@@ -40,6 +40,7 @@ class BuildHat(BaseHat):
 
         Builds version VERSION of app APP, as directed by ini configuration
         '''
+        self._do_sysinit()
         bob = ubik.builder.Builder(self.config, self.options.workdir)
         bob.build_from_config(*self.args[0:2])
 

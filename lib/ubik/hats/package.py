@@ -55,6 +55,7 @@ class PackageHat(BaseHat):
         name, version = self.args[0:2]
 
         # First thing is to build the package
+        self._do_sysinit()
         if self.options.workdir:
             workdir = self.options.workdir
         else:

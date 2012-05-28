@@ -3,6 +3,7 @@
 import ConfigParser
 import StringIO
 import logging
+import os
 import sys
 import textwrap
 import urllib
@@ -114,6 +115,18 @@ class BaseHat(object):
         except IOError as e:
             log.info('Error reading package config from %s: %s', uri, str(e))
             raise e
+
+    def _do_sysinit(self):
+        '''Perform initialization for system commands
+
+        Some initialization may be required prior to running commands 
+        that interact with the OS.  This includes things like setting
+        umask.
+        '''
+        try:
+            os.umask(int(self.config.get('system', 'umask'), 0))
+        except ConfigParser.NoOptionError:
+            pass
 
     def _get_package_cache(self):
         '''Return the appropriate ubik.cache.UbikPackageCache object
