@@ -80,7 +80,7 @@ class PackageHat(BaseHat):
 
         if not (self.options.debug or self.options.workdir):
             log.info("Removing working directory '%s'", workdir)
-            subprocess.check_call(('rm', '-r', workdir))
+            subprocess.check_call(('rm', '-rf', workdir))
 
     command_list = ( package, )
 
