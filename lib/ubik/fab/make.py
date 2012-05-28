@@ -42,7 +42,13 @@ def build(version, config, env):
     except ConfigParser.Error:
         pass
 
-    rootdir_path = os.path.abspath(env.rootdir)
+    install_path = os.path.abspath(env.rootdir)
+    try:
+        install_path = os.path.join(install_path,
+                                    config.get(NAME, 'prefix').lstrip('/'))
+    except ConfigParser.Error:
+        pass
+
     with cd(builddir):
         if not os.path.exists(os.path.join(builddir, 'Makefile')):
             log.info("Makefile doesn't exist, attempting to create")
@@ -67,7 +73,7 @@ def build(version, config, env):
             target = config.get(NAME, 'install_target')
         except ConfigParser.NoOptionError:
             target = 'install'
-        local("make %s DESTDIR=%s" % (target, rootdir_path), capture=False)
+        local("make %s DESTDIR=%s" % (target, install_path), capture=False)
 
 def clean(builddir):
     'Remove build directory and packages'
