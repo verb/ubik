@@ -386,6 +386,7 @@ class RpmPackage(BasePackage):
         spec.write("License: Proprietary\n")
         spec.write("Group: Pontiflex\n")
         spec.write("Vendor: Pontiflex\n")
+        spec.write("AutoReqProv: no\n")
         spec.write("\n%description\n")
         spec.write(self._conf_getp('description'))
         spec.write("\n\n%files\n%defattr(-,root,root)\n")
