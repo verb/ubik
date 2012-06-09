@@ -43,15 +43,18 @@ class HelperHat(BaseHat):
         if len(mystery_argv) > 0:
             self.mystery = ubik.hats.hatter(mystery_argv, self.config,
                                             self.options)
-            log.debug("Helper going to help with hat %s" % self.mystery.name)
         else:
             self.mystery = None
 
     def run(self):
         '''Prints help messages to the output file object'''
         if self.mystery:
+            log.debug("Helper going to help with hat %s" % self.mystery.name)
             self._print_hat_help(self.output, self.mystery)
         else:
+            if len(self.argv) > 1:
+                log.warn("Cannot help with '%s'.  Printing usage instead.", 
+                         ' '.join(self.argv[1:]))
             self._print_hat_list(self.output)
 
     def _print_hat_list(self, out):
