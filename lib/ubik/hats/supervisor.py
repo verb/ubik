@@ -36,7 +36,7 @@ class SupervisorHat(BaseHat):
     @staticmethod
     def areyou(string):
         "Confirm or deny whether I am described by string"
-        return string in ("supervise", "start", "stop", "restart")
+        return string in ('sup', 'supervise', 'start', 'stop', 'restart')
 
     def __init__(self, argv, config=None, options=None):
         super(SupervisorHat, self).__init__(argv, config, options)
@@ -45,9 +45,10 @@ class SupervisorHat(BaseHat):
     def run(self):
         command = self.argv[0]
         if command in self.command_map:
-            self.command_map[command](self, self.args)
-        elif command == 'help':
-            self.help(self.output)
+            if len(self.args) == 0 or self.args[0] == "help":
+                self.help(self.output)
+            else:
+                self.command_map[command](self, self.args)
         else:
             raise HatException("Unknown command: %s" % command)
 
@@ -108,55 +109,55 @@ class SupervisorHat(BaseHat):
 
     # supervisor sub-commands
     def restart(self, args):
-        '''restart APP [ HOST [ HOST ... ] ]
+        '''[sup] restart APP [ HOST [ HOST ... ] ]
 
         Restarts an application on a list of hosts.
         '''
         self.supervise(['restart'] + args)
 
     def start(self):
-        '''start APP [ HOST [ HOST ... ] ]
+        '''[sup] start APP [ HOST [ HOST ... ] ]
 
         Starts an application on a list of hosts.
         '''
         self.supervise(['start'] + args)
 
-    def start(self):
-        '''status APP [ HOST [ HOST ... ] ]
+    def status(self):
+        '''sup status APP [ HOST [ HOST ... ] ]
 
         Reports the status of an application on a list of hosts.
         '''
         self.supervise(['start'] + args)
 
     def stderr(self):
-        '''stderr APP [ HOST [ HOST ... ] ]
+        '''sup stderr APP [ HOST [ HOST ... ] ]
 
         Reports the output an application has sent to stderr.
         '''
         self.supervise(['start'] + args)
 
     def stdout(self):
-        '''stdout APP [ HOST [ HOST ... ] ]
+        '''sup stdout APP [ HOST [ HOST ... ] ]
 
         Reports the output an application has sent to stdout.
         '''
         self.supervise(['start'] + args)
 
     def stop(self):
-        '''stop APP [ HOST [ HOST ... ] ]
+        '''[sup] stop APP [ HOST [ HOST ... ] ]
 
         Stops an application on a list of hosts.
         '''
         self.supervise(['stop'] + args)
 
     def update(self):
-        '''update APP [ HOST [ HOST ... ] ]
+        '''sup update APP [ HOST [ HOST ... ] ]
 
         Refreshes supervisord configuration of an application.
         '''
         self.supervise(['stop'] + args)
 
-    command_list = (restart, start, stderr, stdout, stop, update)
+    command_list = (restart, start, status, stderr, stdout, stop, update)
     command_map = {
         'restart': restart,
         'start': start,
