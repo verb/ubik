@@ -18,7 +18,7 @@ set -e
 
 # Automatically added by ubik.fab.distutils:
 if which pycompile >/dev/null 2>&1; then
-        pycompile -p %(pkgname)s
+        pycompile -V %(pyvers)s -p %(pkgname)s
 fi
 
 # End automatically added section"""
@@ -27,7 +27,7 @@ set -e
 
 # Automatically added by ubik.fab.distutils:
 if which pyclean >/dev/null 2>&1; then
-        pyclean -p %(pkgname)s
+        pyclean -V %(pyvers)s -p %(pkgname)s
 else
         dpkg -L %(pkgname)s | grep \.py$ | while read file
         do
@@ -62,13 +62,17 @@ def _create_pycompile_scripts(scriptdir, config):
     if not os.path.exists(scriptdir):
         os.makedirs(scriptdir)
     pkgname = config.get('package', 'name')
+    try:
+        pyvers = config.get('deb', 'python_version_range')
+    except ConfigParser.Error:
+        pyvers = '2.6-3.0'
 
     for script, templ in (('postinst', POSTINST_TEMPLATE),
                           ('prerm', PRERM_TEMPLATE)):
         if not config.has_option('deb', script):
             script_path = os.path.join(scriptdir, script)
             with open(script_path, 'a') as f:
-                print >>f, templ % {'pkgname': pkgname}
+                print >>f, templ % {'pkgname': pkgname, 'pyvers': pyvers}
             os.chmod(script_path, 0755)
             config.set('deb', script, script_path)
 
