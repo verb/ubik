@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name='ubik',
-      version='0.10.0',
+      version='0.10.1',
       author='Lee Verberne',
       author_email='lee@blarg.org',
       description='Use only as directed.',
