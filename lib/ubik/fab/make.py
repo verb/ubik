@@ -6,6 +6,7 @@ import os, os.path
 import shutil as sh
 import subprocess
 import tempfile
+import shlex
 
 from fabric.api import abort, cd, local, prompt, warn
 
@@ -62,7 +63,7 @@ def build(version, config, env):
                 configure_options = ''
             # use subprocess/shell=False because configure_options is tainted
             # ...  heh.  taint.
-            args = ('./configure '+configure_options).split()
+            args = shlex.split('./configure '+configure_options)
             subprocess.check_call(args, shell=False, cwd=builddir)
         try:
             target = config.get(NAME, 'build_target', vars=config_vars)
