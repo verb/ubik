@@ -24,6 +24,8 @@ def copysrc(version, config, env):
     try:
         if config.get(NAME, 'destination') == 'root':
             destdir = env.rootdir
+        elif config.get(NAME, 'destination') == 'src':
+            destdir = env.srcdir
         destdir = os.path.join(destdir, config.get(NAME, 'prefix').lstrip('/'))
     except ConfigParser.NoOptionError:
         pass
