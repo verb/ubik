@@ -1,8 +1,10 @@
 
+import subprocess
+
 from distutils.core import setup
 
 setup(name='ubik',
-      version='0.10.1',
+      version=subprocess.check_output(('git','describe')).strip(),
       author='Lee Verberne',
       author_email='lee@blarg.org',
       description='Use only as directed.',
@@ -15,5 +17,6 @@ setup(name='ubik',
                 'ubik.rug',
                 ],
       requires=['fabric'],
+      scripts=['bin/rug'],
       url='http://github.com/verb/ubik',
       )

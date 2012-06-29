@@ -16,11 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Command line front end to all these hats
-DESCRIPTION='''\
-This is the command line front end to a collection of platform control scripts
-referred to herein as "hats".  I guess this could be a reference to the number
-hats worn by your systems guru, but mainly I just needed a new namespace to
-avoid collisions.  Also, NEW HAT!'''
+"This is the command line interface to a collection of platform control scripts"
 
 import logging
 import optparse
@@ -37,9 +33,9 @@ log = logging.getLogger('rug.cli')
 
 def init_cli(args=None):
     global config, options
-    p = optparse.OptionParser(usage='%prog [global_options] THING HAT [ARG ...]',
+    p = optparse.OptionParser(usage='%prog [global_options] COMMAND [ARG ...]',
                               version='%prog ' + ubik.defaults.VERSION,
-                              description=DESCRIPTION,
+                              description=__doc__,
                               epilog='Use the help sub-command for more '
                                      'details.')
     p.add_option('--conf', '-c', metavar='FILE',
