@@ -5,7 +5,7 @@ from distutils.core import setup
 
 git_describe = subprocess.Popen(('git','describe'), stdout=subprocess.PIPE)
 out, err = git_describe.communicate()
-git_version = out.strip()
+git_version = out.strip().lstrip('v')
 
 setup(name='ubik',
       version=git_version,
