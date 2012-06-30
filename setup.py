@@ -3,8 +3,12 @@ import subprocess
 
 from distutils.core import setup
 
+git_describe = subprocess.Popen(('git','describe'), stdout=subprocess.PIPE)
+out, err = git_describe.communicate()
+git_version = out.strip()
+
 setup(name='ubik',
-      version=subprocess.check_output(('git','describe')).strip(),
+      version=git_version,
       author='Lee Verberne',
       author_email='lee@blarg.org',
       description='Use only as directed.',
