@@ -41,7 +41,7 @@ set -e
 
 # Automatically added by ubik.fab.distutils:
 if which pyclean >/dev/null 2>&1; then
-        pyclean -V %(pyvers)s -p %(pkgname)s
+        pyclean -p %(pkgname)s
 else
         dpkg -L %(pkgname)s | grep \.py$ | while read file
         do
