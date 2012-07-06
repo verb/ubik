@@ -125,7 +125,8 @@ class UbikPackageCache(object):
         if pkg_type in ('deb', 'rpm'):
             command = INSPECT_CMD_TAB[pkg_type] + (filepath,)
             try:
-                process = subprocess.Popen(command, stdout=subprocess.PIPE)
+                process = subprocess.Popen(command, stderr=subprocess.PIPE,
+                                           stdout=subprocess.PIPE)
             except OSError as e:
                 raise CacheException("Error running %s to inspect %s: %s"
                                      % (command[0], filepath, str(e)))
