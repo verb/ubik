@@ -32,13 +32,13 @@ log = logging.getLogger('ubik.hats.supervisor')
 # equivalent supervisorctl commands.  The %s is expanded to the
 # application name.
 SUPCTL_CMD_MAP = {
-    'restart': "restart %s",
-    'start': "start %s",
-    'status': "status %s",
-    'stop': "stop %s",
-    'stderr': "tail %s stderr",
-    'stdout': "tail %s stdout",
-    'update': "update %s",
+    'add': "sup -i 'reread;add %s;quit'",
+    'restart': "sup restart %s",
+    'start': "sup start %s",
+    'status': "sup status %s",
+    'stop': "sup stop %s",
+    'stderr': "sup tail %s stderr",
+    'stdout': "sup tail %s stdout",
 }
 
 class SupervisorHat(BaseHat):
@@ -104,7 +104,7 @@ class SupervisorHat(BaseHat):
         # TODO: Determine actual user via InfraDB
         deploy_user = self.config.get('deploy', 'user')
 
-        print >>self.output, ("About to '%s' on the following hosts:" % cmd)
+        print >>self.output, ('Running "%s" on the following hosts:' % cmd)
         for host in hosts:
             print >>self.output, "\t%s@%s" % (deploy_user, host)
         yesno = prompt("Proceed?", default='No')
@@ -114,7 +114,7 @@ class SupervisorHat(BaseHat):
         try:
             for host in hosts:
                 with settings(host_string=str(host), user=deploy_user):
-                    fab_output = run("sup %s" % cmd, shell=False)
+                    fab_output = run(cmd, shell=False)
         finally:
             # TODO: replace with disconnect_all() w/ fabric 0.9.4+
             for key in connections.keys():
@@ -122,6 +122,15 @@ class SupervisorHat(BaseHat):
                 del connections[key]
 
     # supervisor sub-commands
+    def add(self):
+        '''sup add APP [ HOST [ HOST ... ] ]
+
+        Causes supervisord to reread its configuration and add APP.  This is
+        necessary when an application is being added to supervisor or an
+        application's supervisor config has changed.
+        '''
+        self.supervise(['add'] + args)
+
     def restart(self, args):
         '''[sup] restart APP [ HOST [ HOST ... ] ]
 
@@ -164,14 +173,7 @@ class SupervisorHat(BaseHat):
         '''
         self.supervise(['stop'] + args)
 
-    def update(self):
-        '''sup update APP [ HOST [ HOST ... ] ]
-
-        Refreshes supervisord configuration of an application.
-        '''
-        self.supervise(['stop'] + args)
-
-    command_list = (restart, start, status, stderr, stdout, stop, update)
+    command_list = (add, restart, start, status, stderr, stdout, stop)
     command_map = {
         'restart': restart,
         'start': start,
