@@ -122,14 +122,14 @@ class SupervisorHat(BaseHat):
                 del connections[key]
 
     # supervisor sub-commands
-    def add(self):
+    def add(self, args):
         '''sup add APP [ HOST [ HOST ... ] ]
 
         Causes supervisord to reread its configuration and add APP.  This is
         necessary when an application is being added to supervisor or an
         application's supervisor config has changed.
         '''
-        self.supervise(['add'] + args)
+        pass # Command only available via supervise()
 
     def restart(self, args):
         '''[sup] restart APP [ HOST [ HOST ... ] ]
@@ -138,35 +138,35 @@ class SupervisorHat(BaseHat):
         '''
         self.supervise(['restart'] + args)
 
-    def start(self):
+    def start(self, args):
         '''[sup] start APP [ HOST [ HOST ... ] ]
 
         Starts an application on a list of hosts.
         '''
         self.supervise(['start'] + args)
 
-    def status(self):
+    def status(self, args):
         '''sup status APP [ HOST [ HOST ... ] ]
 
         Reports the status of an application on a list of hosts.
         '''
-        self.supervise(['start'] + args)
+        pass # Command only available via supervise()
 
-    def stderr(self):
+    def stderr(self, args):
         '''sup stderr APP [ HOST [ HOST ... ] ]
 
         Reports the output an application has sent to stderr.
         '''
-        self.supervise(['start'] + args)
+        pass # Command only available via supervise()
 
-    def stdout(self):
+    def stdout(self, args):
         '''sup stdout APP [ HOST [ HOST ... ] ]
 
         Reports the output an application has sent to stdout.
         '''
-        self.supervise(['start'] + args)
+        pass # Command only available via supervise()
 
-    def stop(self):
+    def stop(self, args):
         '''[sup] stop APP [ HOST [ HOST ... ] ]
 
         Stops an application on a list of hosts.
