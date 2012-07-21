@@ -25,6 +25,7 @@ config_defaults = {
     "builder.iniuri": "https://deploy/ini",
     "cache.dir":    "~/.rug/cache",
     "deploy.user": "prod",
+    "deploy.restart": "false",
     "infradb.driver": "dns",
 }
 
