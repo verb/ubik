@@ -267,17 +267,18 @@ class InfraService(InfraObject):
     def hosts(self):
         """Resolve this service to its constituent hosts
 
-        Currently, this is just a list of strings
+        This returns a list of InfraHosts.
 
         >>> db=InfraDB('json', 'tests/infradb.json')
-        >>> sorted(db.service('webserver').hosts())
-        [u'alpha.dc1', u'bravo.dc1', u'charlie.dc2', u'delta.dc3']
-        >>> sorted(db.service('webserver.dc1').hosts())
-        [u'alpha.dc1', u'bravo.dc1']
+        >>> sorted(db.service('webserver').hosts(), key=str)
+        ['InfraHost: alpha.dc1', 'InfraHost: bravo.dc1', 'InfraHost: ...]
+        >>> sorted(db.service('webserver.dc1').hosts(), key=str)
+        ['InfraHost: alpha.dc1', 'InfraHost: bravo.dc1']
         >>>
 
         """
-        return self._driver.resolve_service(self._name)
+        return [InfraHost(self._driver.lookup_host(hoststr), self._driver)
+                for hoststr in self._driver.resolve_service(self._name)]
 
 if __name__ == '__main__':
     import doctest
