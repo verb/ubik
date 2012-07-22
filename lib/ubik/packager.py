@@ -365,6 +365,7 @@ class DebPackage(BasePackage):
             'dir-or-file-in-opt',
             'missing-dependency-on-libc',
             'non-etc-file-marked-as-conffile',
+            'package-installs-python-bytecode',
             'python-script-but-no-python-dep',
             'unstripped-binary-or-object',
             'wrong-file-owner-uid-or-gid',
