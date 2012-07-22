@@ -96,6 +96,8 @@ class PackageHat(BaseHat):
             log.info("Removing working directory '%s'", workdir)
             subprocess.check_call(('rm', '-rf', workdir))
 
+        print >>self.output, "Packages built successfully."
+
     command_list = ( package, )
 
 if __name__ == '__main__':
