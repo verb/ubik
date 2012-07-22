@@ -364,12 +364,13 @@ class DebPackage(BasePackage):
             'dir-in-usr-local',
             'dir-or-file-in-opt',
             'missing-dependency-on-libc',
+            'no-copyright-file',
             'non-etc-file-marked-as-conffile',
             'python-script-but-no-python-dep',
             'unstripped-binary-or-object',
             'wrong-file-owner-uid-or-gid',
         ))
-        local("lintian -L '>=important' -X cpy,chg,shl --suppress-tags=%s '%s'" %
+        local("lintian -L '>=important' --suppress-tags=%s '%s'" %
               (lintian_suppress, self.filename), capture=False)
 
         return self.filename
