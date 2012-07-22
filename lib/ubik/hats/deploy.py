@@ -20,6 +20,7 @@ import tempfile
 
 import ubik.builder
 import ubik.cache
+import ubik.config
 import ubik.defaults
 import ubik.packager
 
@@ -133,8 +134,9 @@ class DeployHat(BaseHat):
 
                     pkg_delete = True
                     if host_pkgtype in PKG_INSTALL_CMD.keys():
-                        output = run(PKG_INSTALL_CMD[host_pkgtype] + " pkgs/%s"
-                                     % host_pkgfilename, shell=False)
+                        fab_output = run(PKG_INSTALL_CMD[host_pkgtype] +
+                                         " pkgs/%s" % host_pkgfilename,
+                                         shell=False)
                     else:
                         fab_output = ("Unable to determine install command for "
                                       "package type %s.  Leaving package "
@@ -149,6 +151,17 @@ class DeployHat(BaseHat):
                         fab_output = run("rm pkgs/" + host_pkgfilename, shell=False)
                         if fab_output:
                             print >>self.output, fab_output
+
+                    if self.config.get('deploy', 'restart') == 'supervisor':
+                        try:
+                            service = self.config.get('supervisor', 'service')
+                            fab_output = run("sup restart " + service,
+                                             shell=False)
+                            if fab_output:
+                                print >>self.output, fab_output
+                        except ubik.config.NoOptionError:
+                            log.error("supervisor restart specified by config "
+                                      "but supervisor.service option missing.")
         finally:
             # TODO: replace with disconnect_all() w/ fabric 0.9.4+
             for key in connections.keys():

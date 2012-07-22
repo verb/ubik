@@ -49,4 +49,6 @@ def untar(version, config, env):
     # For now just use system tools for this
     if not os.path.exists('src.tgz'):
         local("curl -f -o src.tgz " + sourceurl, capture=False)
+    if not os.path.exists(destdir):
+        os.makedirs(destdir)
     local("tar -C %s -xvf src.tgz" % destdir, capture=False)

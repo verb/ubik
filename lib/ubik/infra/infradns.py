@@ -67,14 +67,20 @@ class InfraDBDriverDNS(object):
         """Query resolver and return an answer object or None"""
         try:
             answer = self.resolver.query(query, qtype, tcp=False)
-            # dnspython doesn't fallback to TCP
-            if len(answer) >= 13:
+        except dns.resolver.NXDOMAIN:
+            return None
+        except dns.resolver.NoAnswer:
+            answer = None
+
+        # dnspython doesn't fallback to TCP, so answer could be too long to
+        # fit in a UDP packet and we wouldn't know.  Additionally, the server
+        # may return NoAnswer if the response is too long
+        if not answer or len(answer) >= 13:
+            try:
                 answer = self.resolver.query(query, qtype, tcp=True)
-        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-            pass
-        else:
-            return answer
-        return None
+            except dns.resolver.NoAnswer:
+                pass
+        return answer
 
     def _query_txt(self, query):
         """Query resolver for TXT record and return a list of strings"""
