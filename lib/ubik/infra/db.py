@@ -277,8 +277,12 @@ class InfraService(InfraObject):
         >>>
 
         """
-        return [InfraHost(self._driver.lookup_host(hoststr), self._driver)
-                for hoststr in self._driver.resolve_service(self._name)]
+        hostlist = []
+        for hoststr in self._driver.resolve_service(self._name):
+            hostattr = self._driver.lookup_host(hoststr)
+            if hostattr:
+                hostlist.append(InfraHost(hostattr, self._driver))
+        return hostlist
 
 if __name__ == '__main__':
     import doctest
