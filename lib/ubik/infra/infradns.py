@@ -174,6 +174,9 @@ class InfraDBDriverDNS(object):
     def lookup_host(self, query):
         """Look up a host based on partial name, return FQDN
 
+        In the DNS TXT record references, addresses can be prefixed
+        with a descriptive label.  i.e. "cold-standby:alpha.dc1"
+
         >>> idb=InfraDBDriverDNS()
         >>> h=idb.lookup_host('alpha.dc1')
         >>> h['name']
@@ -188,6 +191,11 @@ class InfraDBDriverDNS(object):
         """
         log.debug("Gathering info for host '%s'", query)
         host = dict()
+
+        # Remove label from DNS query
+        if ':' in query:
+            host['label'], query = query.rsplit(':', 2)
+
         answer = self._query(query, 'A')
         if answer and len(answer) > 0:
             host['name'] = unicode(query)
