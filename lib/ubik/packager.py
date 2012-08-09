@@ -368,6 +368,7 @@ class DebPackage(BasePackage):
             'non-etc-file-marked-as-conffile',
             'package-installs-python-bytecode',
             'python-script-but-no-python-dep',
+            'shlib-with-executable-bit',
             'unstripped-binary-or-object',
             'wrong-file-owner-uid-or-gid',
         ))
