@@ -217,6 +217,7 @@ class InfraHost(InfraObject):
         super(InfraHost, self).__init__(attr, driver)
         self._hardware = attr.get('hardware', None)
         self._os = attr.get('os', None)
+        self.label = attr.get('label', None)
 
     def __repr__(self):
         return "'InfraHost: %s'" % self._name

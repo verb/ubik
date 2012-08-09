@@ -77,6 +77,8 @@ class InfraDBHat(BaseHat):
         else:
             for service in self.idb.services(args):
                 for host in sorted(service.hosts()):
+                    if host.label:
+                        print >>self.output, "(%s)\t" % host.label,
                     print >>self.output, unicode(host)
 
     def services(self, args):
