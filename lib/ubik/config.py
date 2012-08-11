@@ -71,7 +71,10 @@ class UbikConfig(ConfigParser.SafeConfigParser):
 
     def write(self, fileish):
         if isinstance(fileish, str):
-            with open(os.path.expanduser(fileish), 'w') as cf:
+            filepath = os.path.expanduser(fileish)
+            if not os.path.exists(os.path.dirname(filepath)):
+                os.makedirs(os.path.dirname(filepath))
+            with open(filepath, 'w') as cf:
                 ConfigParser.SafeConfigParser.write(self, cf)
         else:
             ConfigParser.SafeConfigParser.write(self, fileish)
