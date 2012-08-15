@@ -94,7 +94,7 @@ class ConfigHat(BaseHat):
         self.config.set(section, option, value)
 
     def _unset(self, key):
-        '''unset OPTION
+        '''config unset OPTION
 
         Remove the option named OPTION.
         '''
