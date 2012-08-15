@@ -48,7 +48,10 @@ class ConfigHat(BaseHat):
             if value:
                 print >>self.output, value
         elif len(self.args) == 2:
-            self._set(*self.args)
+            if self.args[0].lower() == 'unset':
+                self._unset(self.args[1])
+            else:
+                self._set(*self.args)
             if self.config_file:
                 self.config.write(self.config_file)
         else:
@@ -90,5 +93,27 @@ class ConfigHat(BaseHat):
             self.config.add_section(section)
         self.config.set(section, option, value)
 
-    command_list = ( _get, _set )
+    def _unset(self, key):
+        '''unset OPTION
+
+        Remove the option named OPTION.
+        '''
+        try:
+            section, option = key.split('.', 2)
+        except ValueError:
+            section = 'DEFAULT'
+            option = key
+
+        # The option may exist as a default or in the system config file,
+        # but not in the user config, so we can ignore errors to remove
+        # options/sections that don't exist
+        try:
+            self.config.remove_option(section, option)
+            if len(self.config.options(section)) == 0:
+                self.config.remove_section(section)
+        except (ConfigParser.NoOptionError,
+                ConfigParser.NoSectionError):
+            pass
+
+    command_list = ( _get, _set, _unset )
 
