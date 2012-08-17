@@ -233,9 +233,14 @@ class UbikPackageCache(object):
                                                'AND type = :type '
                                          'ORDER BY added DESC '
                                          'LIMIT -1 OFFSET :keep;',
-                                         values)
-                for pkg in pkgs:
-                    self.remove(pkg['filename'])
+                                         values).fetchall()
+
+                if len(pkgs) > 0:
+                    log.debug("Number of packages for %s greater than %s." %
+                              (values['name'], keep_per_version))
+                    for pkg in pkgs:
+                        self.remove(pkg['filename'])
+
         self.conn.execute('VACUUM;')
 
     def remove(self, filename, pkg_type=None):

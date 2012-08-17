@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import ConfigParser
 import logging
 import os.path
 
@@ -45,6 +46,16 @@ class CacheHat(BaseHat):
         self.cache = ubik.cache.UbikPackageCache(cache_dir)
 
     def run(self):
+        # If cache.autoprune is true, run prune anytime a cache
+        # command is called
+        try:
+            autoprune = self.config.get('cache', 'autoprune')
+        except ConfigParser.Error:
+            pass
+        else:
+            if autoprune.lower() == 'true':
+                self.prune()
+
         if len(self.args) == 0:
             self.args.insert(0, 'ls')
 
@@ -108,7 +119,11 @@ class CacheHat(BaseHat):
         Also tidies the index by removing packages that have been deleted
         on disk.
         '''
-        self.cache.prune()
+        try:
+            keep_versions = self.config.get('cache', 'keep_packages')
+        except ConfigParser.Error:
+            keep_versions = None
+        self.cache.prune(keep_versions)
 
     def remove(self):
         '''cache remove FILENAME
