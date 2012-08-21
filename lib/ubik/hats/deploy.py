@@ -106,8 +106,8 @@ class DeployHat(BaseHat):
             if filename:
                 pkgpath[pkgtype] = filename
             else:
-                log.error("Package for %s doesn't exist.  Please build.",
-                          pkgtype)
+                raise HatException("Package of type '%s' is needed for this "
+                                   "deploy, but it doesn't exist. " % pkgtype)
 
         print >>self.output, "About to deploy the following packages:"
         for pkgname in pkgpath.values():
