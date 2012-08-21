@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import sys
+
 import ubik.rug.cli
 
-ubik.rug.cli.main()
+sys.exit(ubik.rug.cli.main())

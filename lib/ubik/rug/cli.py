@@ -80,9 +80,11 @@ def main(args=None):
             print >>sys.stderr, "ERROR:", str(e)
             if options.debug:
                 raise e
+            return 1
     else:
         print >>sys.stderr, "ERROR: No such command"
+        return 2
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
 
