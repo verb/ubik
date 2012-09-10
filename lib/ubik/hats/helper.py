@@ -72,12 +72,14 @@ class HelperHat(BaseHat):
             self._print_hat_list(self.output)
 
     def _print_hat_list(self, out):
-        print >>out, "The following commands are available:"
+        print >>out, "The following help topics are available:"
         print >>out
 
         for hat in sorted(ubik.hats.ALL_HATS, key=lambda h: h.name):
             print >>out, "%-9s - %s" % (hat.name, hat.desc)
         print >>out
+
+        print >>out, 'Use "help TOPIC" to get more information on TOPIC.'
 
     def _print_hat_help(self, out, whut):
         log.debug("Invoking help for %s" % whut.name)
