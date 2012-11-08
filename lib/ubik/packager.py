@@ -28,6 +28,7 @@ import tempfile
 from fabric.api import *
 
 import builder
+import ubik.config
 
 FAKESTATE='_fakestate'
 USERINI='~/.rug/rug.ini'
@@ -86,7 +87,7 @@ class BasePackage(object):
         if isinstance(config, ConfigParser.SafeConfigParser):
             self.config = config
         else:
-            self.config = ConfigParser.SafeConfigParser()
+            self.config = ubik.config.UbikConfig()
             self.config.read(os.path.expanduser(USERINI))
             self.config.read(config)
 
@@ -394,10 +395,9 @@ class RpmPackage(BasePackage):
                 pass
         spec.write("Version: %s\n" % version)
         spec.write("Release: %s\n" % release)
-        spec.write("License: Proprietary\n")
-        spec.write("Group: Pontiflex\n")
-        spec.write("Vendor: Pontiflex\n")
-        spec.write("AutoReqProv: no\n")
+        for field in 'License', 'Group', 'Vendor', 'AutoReqProv':
+            value = self.config.get('package:rpm', field.lower())
+            spec.write("%s: %s\n" % (field, value))
         spec.write("\n%description\n")
         spec.write(self._conf_getp('description'))
         spec.write("\n\n%files\n%defattr(-,root,root)\n")

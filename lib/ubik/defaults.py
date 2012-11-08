@@ -27,6 +27,7 @@ config_defaults = {
     "deploy.user": "prod",
     "deploy.restart": "false",
     "infradb.driver": "dns",
+    "package.license": "Proprietary",
     "package.maintainer": "%(login)s@%(node)s",
     "package:deb.lintian_suppress": (
         'file-in-etc-not-marked-as-conffile,'
@@ -44,5 +45,8 @@ config_defaults = {
         'unstripped-binary-or-object,'
         'wrong-file-owner-uid-or-gid'
     ),
+    "package:rpm.autoreqprov": "no",
+    "package:rpm.group": "Miscellaneous",
+    "package:rpm.vendor": "Unspecified",
 }
 
