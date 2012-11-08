@@ -28,5 +28,21 @@ config_defaults = {
     "deploy.restart": "false",
     "infradb.driver": "dns",
     "package.maintainer": "%(login)s@%(node)s",
+    "package:deb.lintian_suppress": (
+        'file-in-etc-not-marked-as-conffile,'
+        'file-in-usr-local,'
+        'description-starts-with-package-name,'
+        'description-synopsis-is-duplicated,'
+        'dir-in-usr-local,'
+        'dir-or-file-in-opt,'
+        'missing-dependency-on-libc,'
+        'no-copyright-file,'
+        'non-etc-file-marked-as-conffile,'
+        'package-installs-python-bytecode,'
+        'python-script-but-no-python-dep,'
+        'shlib-with-executable-bit,'
+        'unstripped-binary-or-object,'
+        'wrong-file-owner-uid-or-gid'
+    ),
 }
 

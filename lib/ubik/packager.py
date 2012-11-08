@@ -357,25 +357,15 @@ class DebPackage(BasePackage):
             raise PackagerError("Error creating debian package")
         local("rm -r '%s'" % os.path.join(rootdir, 'DEBIAN'), capture=False)
 
-        lintian_suppress = ','.join((
-            'file-in-etc-not-marked-as-conffile',
-            'file-in-usr-local',
-            'description-starts-with-package-name',
-            'description-synopsis-is-duplicated',
-            'dir-in-usr-local',
-            'dir-or-file-in-opt',
-            'missing-dependency-on-libc',
-            'no-copyright-file',
-            'non-etc-file-marked-as-conffile',
-            'package-installs-python-bytecode',
-            'python-script-but-no-python-dep',
-            'shlib-with-executable-bit',
-            'unstripped-binary-or-object',
-            'wrong-file-owner-uid-or-gid',
-        ))
         if self.lint:
-            local("lintian -L '>=important' --suppress-tags=%s '%s'" %
-                  (lintian_suppress, self.filename), capture=False)
+            suppress_tags = self.config.get('package:deb', 'lintian_suppress')
+            if suppress_tags:
+                suppress_opt = (' --suppress-tags=' +
+                                suppress_tags.translate(None, ' '))
+            else:
+                suppress_opt = ''
+            local("lintian -L '>=important'%s '%s'" %
+                  (suppress_opt, self.filename), capture=False)
 
         return self.filename
 
