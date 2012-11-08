@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import optparse
 import os.path
 import subprocess
 import tempfile
@@ -45,7 +46,11 @@ class PackageHat(BaseHat):
 
     def __init__(self, argv, config=None, options=None):
         super(PackageHat, self).__init__(argv, config, options)
-        self.args = argv[1:]
+
+        cmd_parser = optparse.OptionParser(add_help_option=False)
+        cmd_parser.add_option('--nolint', dest='lint', default=True, action='store_false',
+                              help="Do not automatically invoke lint for package")
+        (self.cmd_options, self.args) = cmd_parser.parse_args(argv[1:])
 
     def run(self):
         if self.args[0] == 'help':
@@ -55,7 +60,7 @@ class PackageHat(BaseHat):
 
     # package sub-commands
     def package(self):
-        '''package [ deb|rpm ] APP VERSION
+        '''package [ --nolint ] [ deb|rpm ] APP VERSION
 
         Builds version VERSION of app APP, as directed by ini configuration,
         and add it to the package cache.
@@ -83,7 +88,8 @@ class PackageHat(BaseHat):
             # After the build_from_config() call above, self.config will contain
             # all of the configuration for this package
             if self.config.has_section(pkgtype):
-                pkgr = ubik.packager.Package(bob.pkgcfg, bob.env, pkgtype)
+                pkgr = ubik.packager.Package(bob.pkgcfg, bob.env, pkgtype,
+                                             lint=self.cmd_options.lint)
                 pkgfile = pkgr.build(version)
                 log.debug("Successfully created package file %s", pkgfile)
                 cache.add(pkgfile, type=pkgtype, version=version)

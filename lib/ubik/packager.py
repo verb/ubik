@@ -58,7 +58,7 @@ def _split_version(combined_version):
         return (version_release[0], '1')
     return version_release
 
-def Package(configfile, env, pkgtype='deb'):
+def Package(configfile, env, pkgtype='deb', lint=True):
     """Return the appropriate packager for a given pkgtype
 
     >>> p=Package('tests/package.ini', builder.BuildEnv(), 'deb')
@@ -71,17 +71,18 @@ def Package(configfile, env, pkgtype='deb'):
 
     """
     if pkgtype == 'deb':
-        return DebPackage(configfile, env)
+        return DebPackage(configfile, env, lint)
     elif pkgtype == 'rpm':
-        return RpmPackage(configfile, env)
+        return RpmPackage(configfile, env, lint)
     else:
         warn("Package type == %s?!  You're crazy, man.  I like you, "
              "but you're crazy." % pkgtype)
 
 class BasePackage(object):
-    def __init__(self, config, env):
+    def __init__(self, config, env, lint=True):
         self.filename = None
         self.env = env
+        self.lint = lint
         if isinstance(config, ConfigParser.SafeConfigParser):
             self.config = config
         else:
@@ -372,8 +373,9 @@ class DebPackage(BasePackage):
             'unstripped-binary-or-object',
             'wrong-file-owner-uid-or-gid',
         ))
-        local("lintian -L '>=important' --suppress-tags=%s '%s'" %
-              (lintian_suppress, self.filename), capture=False)
+        if self.lint:
+            local("lintian -L '>=important' --suppress-tags=%s '%s'" %
+                  (lintian_suppress, self.filename), capture=False)
 
         return self.filename
 
