@@ -42,9 +42,17 @@ class UbikConfig(ConfigParser.SafeConfigParser):
     and/or section-name inheritance.  Some config files can be read as "system"
     or "global" config files.  These "system" config files will be treated the
     same as if they had been read as a standard config, but their values won't
-    be written by write() The advantage of keeping it separate is that it the 
-    config defaults won't be written to the users local config upon change.
+    be written by write().  The advantage of keeping it separate is that the
+    config defaults won't be written to the user's local config upon change.
     '''
+
+    # This dictionary can be used to customize the strings returned by
+    # ubik.defaults at run time.
+    _default_vars = {
+        'login': os.getlogin(),
+        'node': os.uname()[1],
+    }
+
     def read(self, files, system_files=()):
         """Just expands paths and the calls the real config parser reader
 
@@ -117,7 +125,8 @@ class UbikConfig(ConfigParser.SafeConfigParser):
             else:
                 secopt = '.'.join((section, option))
                 if secopt in ubik.defaults.config_defaults:
-                    return ubik.defaults.config_defaults[secopt]
+                    return (ubik.defaults.config_defaults[secopt] %
+                            self._default_vars)
 
             if ':' in section:
                 section = section.rsplit(':', 1)[0]

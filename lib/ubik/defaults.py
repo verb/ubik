@@ -27,5 +27,6 @@ config_defaults = {
     "deploy.user": "prod",
     "deploy.restart": "false",
     "infradb.driver": "dns",
+    "package.maintainer": "%(login)s@%(node)s",
 }
 
