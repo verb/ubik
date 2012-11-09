@@ -21,9 +21,14 @@ import dns.resolver
 import logging
 import os
 
+from dns.name import Name
+
 log = logging.getLogger('infra.dns')
 
 SVC_INDEX = '_service._services'
+
+HST_REC = Name(('_host',))
+SVC_REC = Name(('_service',))
 
 class InfraDBDriverDNS(object):
     """InfraDB DNS Driver class
@@ -58,13 +63,14 @@ class InfraDBDriverDNS(object):
             self.resolver = dns.resolver.get_default_resolver()
 
         if domain:
-            self.root = dns.name.Name(domain.split('.'))
+            self.root = dns.name.from_text(domain)
         else:
             # Attempt to guess what my root is
             try:
                 self.root = self.resolver.query('', 'NS').qname
             except dns.exception.DNSException:
                 self.root = dns.name.Name([])
+        log.debug("Initialize InfraDB DNS driver")
 
     def _query(self, query, qtype='A'):
         """Query resolver and return an answer object or None"""
@@ -141,11 +147,13 @@ class InfraDBDriverDNS(object):
             except dns.name.NoParent:
                 pass
             else:
-                if self.root and not domain == self.root:
-                    # The answer is not already relative to our root,
-                    # so we need to append the relative tag
-                    tag = str(domain.relativize(self.root))
-                    txts = ["%s.%s" % (t, tag) for t in txts]
+                # The texts returned here will be relative to domain,
+                # but we want to return them relative to self.root
+                log.debug('Relativize root=%s domain=%s' % (self.root, domain))
+                txts = [Name(t.split('.')).derelativize(domain)\
+                                          .relativize(self.root)\
+                                          .to_text(omit_final_dot=False)
+                        for t in txts]
 
         return txts
 
@@ -241,8 +249,10 @@ class InfraDBDriverDNS(object):
         """
         log.debug("Gathering info for service '%s'", query)
         svc = dict()
-        svc_ans = self._query('_service.' + query, 'TXT')
-        hst_ans = self._query('_host.' + query, 'TXT')
+        svc_name = SVC_REC.concatenate(Name(query.split('.')))
+        hst_name = HST_REC.concatenate(Name(query.split('.')))
+        svc_ans = self._query(svc_name, 'TXT')
+        hst_ans = self._query(hst_name, 'TXT')
         if svc_ans or hst_ans:
             svc['name'] = unicode(query)
 
