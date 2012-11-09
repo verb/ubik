@@ -70,7 +70,7 @@ class InfraDBDriverDNS(object):
                 self.root = self.resolver.query('', 'NS').qname
             except dns.exception.DNSException:
                 self.root = dns.name.Name([])
-        log.debug("Initialize InfraDB DNS driver")
+        log.debug("InfraDB DNS driver root " + self.root.to_text())
 
     def _query(self, query, qtype='A'):
         """Query resolver and return an answer object or None"""
@@ -150,9 +150,9 @@ class InfraDBDriverDNS(object):
                 # The texts returned here will be relative to domain,
                 # but we want to return them relative to self.root
                 log.debug('Relativize root=%s domain=%s' % (self.root, domain))
-                txts = [Name(t.split('.')).derelativize(domain)\
-                                          .relativize(self.root)\
-                                          .to_text(omit_final_dot=False)
+                txts = [dns.name.from_text(t, domain)\
+                            .relativize(self.root)\
+                            .to_unicode(omit_final_dot=True)
                         for t in txts]
 
         return txts
