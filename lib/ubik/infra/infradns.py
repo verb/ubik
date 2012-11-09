@@ -43,6 +43,9 @@ class InfraDBDriverDNS(object):
         >>> idb=InfraDBDriverDNS('example.com.')
         >>> idb.root
         <DNS name example.com.>
+        >>> idb=InfraDBDriverDNS('dc1.example.com.')
+        >>> idb.root
+        <DNS name dc1.example.com.>
         >>>
 
         """
@@ -122,7 +125,7 @@ class InfraDBDriverDNS(object):
             for record in answer:
                 # Each TXT record can have a list of strings delimitted by
                 # quotes.  e.g. '"one two" "three four"'
-                # This should be come ('one two', 'three four')
+                # This should become ('one two', 'three four')
                 txts.extend([unicode(s) for s in record.strings])
 
             # There are two levels of parent() below because the TXT tags
@@ -160,16 +163,20 @@ class InfraDBDriverDNS(object):
         [u'mailserver.dc1', u'webserver.dc1']
         >>> sorted(idb.list_services('bogus'))
         []
+        >>> idb=InfraDBDriverDNS('dc1.example.com.')
+        >>> sorted(idb.list_services('dc1'))
+        [u'mailserver', u'webserver']
+        >>> sorted(idb.list_services('dc3'))
+        [u'webserver.dc3.example.com.']
         >>>
 
         """
-        # TODO: this should use _txt_rel_str instead of _query_txt
-        # in order to support relative roots
         if query:
-            suffix = '.' + query
-            return [s+suffix for s in self._query_txt(SVC_INDEX+suffix)]
+            record_str = '.'.join((SVC_INDEX, query))
         else:
-            return self._query_txt(SVC_INDEX)
+            record_str = SVC_INDEX
+        svc_ans = self._query(record_str, 'TXT')
+        return self._txt_rel_str(svc_ans)
 
     def lookup_host(self, query):
         """Look up a host based on partial name, return FQDN
