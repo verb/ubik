@@ -27,8 +27,15 @@ log = logging.getLogger('infra.dns')
 
 SVC_INDEX = '_service._services'
 
-HST_REC = Name(('_host',))
-SVC_REC = Name(('_service',))
+def _hsts_for(record):
+    "Utility function to return DNS lookup listing hosts for record"
+    record_name = dns.name.from_text(record, dns.name.empty)
+    return Name(('_host',)).concatenate(record_name)
+
+def _svcs_for(record):
+    "Utility function to return DNS lookup listing services for record"
+    record_name = dns.name.from_text(record, dns.name.empty)
+    return Name(('_service',)).concatenate(record_name)
 
 class InfraDBDriverDNS(object):
     """InfraDB DNS Driver class
@@ -221,7 +228,7 @@ class InfraDBDriverDNS(object):
             if answer and len(answer) > 0:
                 host['hardware'] = unicode(answer[0].cpu)
                 host['os'] = unicode(answer[0].os)
-            svcs = self._query_txt("_service."+query)
+            svcs = self._txt_rel_str(self._query(_svcs_for(query), 'TXT'))
             if svcs:
                 host['services'] = svcs
             return host
@@ -249,19 +256,23 @@ class InfraDBDriverDNS(object):
         """
         log.debug("Gathering info for service '%s'", query)
         svc = dict()
-        svc_name = SVC_REC.concatenate(Name(query.split('.')))
-        hst_name = HST_REC.concatenate(Name(query.split('.')))
-        svc_ans = self._query(svc_name, 'TXT')
-        hst_ans = self._query(hst_name, 'TXT')
+        svc_ans = self._query(_svcs_for(query), 'TXT')
+        hst_ans = self._query(_hsts_for(query), 'TXT')
         if svc_ans or hst_ans:
             svc['name'] = unicode(query)
 
         # If service exists, gather its attributes
         if svc:
-            if svc_ans:
-                svc["services"] = self._txt_rel_str(svc_ans)
             if hst_ans:
                 svc["hosts"] = self._txt_rel_str(hst_ans)
+            # When resolving services to hosts, hosts always override services,
+            # but services are included (and later resolved) as long as their
+            # parent domain matches.  Without this check, the svc_ans could be
+            # a response from farther down the DNS search path and unrelated to
+            # this entry entirely.
+            if svc_ans and (not hst_ans or
+                    hst_ans.qname.parent() == svc_ans.qname.parent()):
+                svc["services"] = self._txt_rel_str(svc_ans)
             return svc
 
         return None
