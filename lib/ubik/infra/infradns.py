@@ -99,16 +99,11 @@ class InfraDBDriverDNS(object):
         return answer
 
     def _query_txt(self, query):
-        """Query resolver for TXT record and return a list of strings"""
-        answer = self._query(query, 'TXT')
-        txts = []
-        if answer:
-            for record in answer:
-                # Each TXT record can have a list of strings delimitted by
-                # quotes.  e.g. '"one two" "three four"'
-                # This should be come ('one two', 'three four')
-                txts.extend([unicode(s) for s in record.strings])
-        return txts
+        "Query resolver for TXT record and return a list of relativized strings"
+        if not isinstance(query, Name):
+            query = dns.name.from_text(query, dns.name.empty)
+        log.debug('txt query is ' + query.to_text())
+        return self._txt_rel_str(self._query(query, 'TXT'))
 
     def _txt_rel_str(self, answer):
         """Extract a list of strings from a TXT answer record
@@ -178,10 +173,13 @@ class InfraDBDriverDNS(object):
         [u'mailserver.dc1', u'webserver.dc1']
         >>> sorted(idb.list_services('bogus'))
         []
+
         >>> idb=InfraDBDriverDNS('dc1.example.com.')
-        >>> sorted(idb.list_services('dc1'))
+        >>> sorted(idb.list_services())
         [u'mailserver', u'webserver']
         >>> sorted(idb.list_services('dc3'))
+        []
+        >>> sorted(idb.list_services('dc3.example.com.'))
         [u'webserver.dc3.example.com.']
         >>>
 
@@ -190,8 +188,7 @@ class InfraDBDriverDNS(object):
             record_str = '.'.join((SVC_INDEX, query))
         else:
             record_str = SVC_INDEX
-        svc_ans = self._query(record_str, 'TXT')
-        return self._txt_rel_str(svc_ans)
+        return self._query_txt(record_str)
 
     def lookup_host(self, query):
         """Look up a host based on partial name, return FQDN
@@ -199,14 +196,14 @@ class InfraDBDriverDNS(object):
         In the DNS TXT record references, addresses can be prefixed
         with a descriptive label.  i.e. "cold-standby:alpha.dc1"
 
-        >>> idb=InfraDBDriverDNS()
+        >>> idb=InfraDBDriverDNS('example.com.')
         >>> h=idb.lookup_host('alpha.dc1')
         >>> h['name']
         u'alpha.dc1'
         >>> (h['hardware'], h['os'])
         (u'hardware_tag', u'os_tag')
         >>> sorted(h['services'])
-        [u'mailserver', u'webserver']
+        [u'mailserver.dc1', u'webserver.dc1']
         >>> idb.lookup_host('bogus')
         >>>
 

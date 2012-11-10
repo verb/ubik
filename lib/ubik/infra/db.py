@@ -179,6 +179,7 @@ class InfraDB(object):
 
 class InfraObject(object):
     def __init__(self, attr, driver):
+        log.debug('Creating InfraObject from ' + repr(attr))
         self._name = attr['name']
         self._driver = driver
         self._hosts = attr.get('hosts', [])
