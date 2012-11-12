@@ -20,8 +20,9 @@ import os, os.path
 import shutil as sh
 import tempfile
 
-from fabric.api import abort, cd, local, prompt, warn
+from fabric.api import local, prompt
 
+from . import _local
 from ubik import builder, packager
 
 NAME = 'ant'
@@ -66,8 +67,7 @@ def build(version, config, env):
     except ConfigParser.Error:
         pass
 
-    with cd(builddir):
-        local("ant %s %s" % (properties, target), capture=False)
+    _local("ant %s %s" % (properties, target), cwd=builddir)
 
 def clean(builddir):
     'Remove build directory and packages'
@@ -108,7 +108,7 @@ def package(version=None, config=None, env=None):
             pkg.build(version)
 
     if cleanitup:
-        local('rm -rf %s' % env.rootdir)
+        _local('rm -rf %s' % env.rootdir)
 
 def rpm(version=None):
     'Build a Red Hat package'

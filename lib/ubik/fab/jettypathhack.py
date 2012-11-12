@@ -16,7 +16,14 @@
 import ConfigParser
 import os, os.path
 
-from fabric.api import cd, local, prompt, warn
+from fabric.api import local, prompt, warn
+# Fabric 1.0 changed changed the scope of cd() to only affect remote calls.
+# This bit of kludgery maintains compatibility of this file with fabric 0.9,
+# but it is only possible because no remote calls are made in this file
+try:
+    from fabric.api import lcd as cd
+except ImportError:
+    from fabric.api import cd
 
 def _get_config(configfile='package.ini'):
     config = ConfigParser.SafeConfigParser()

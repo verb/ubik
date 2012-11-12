@@ -22,7 +22,7 @@ import stat
 import subprocess
 import tempfile
 
-from fabric.api import abort, cd, local, prompt, warn
+from fabric.api import abort, local, prompt, warn
 
 from ubik import builder, packager
 

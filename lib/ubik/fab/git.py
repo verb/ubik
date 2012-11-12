@@ -17,8 +17,7 @@ import ConfigParser
 import logging
 import os, os.path
 
-from fabric.api import cd, local, prompt
-
+from . import _local
 from ubik import builder
 
 NAME = 'git'
@@ -48,15 +47,14 @@ def clone(version, config, env):
 
     # Clone if doesn't exist, but don't touch repo otherwise
     if not os.path.exists(os.path.join(env.srcdir, '.git')):
-        local("git clone %s %s" % (repo, env.srcdir), capture=False)
+        _local("git clone %s %s" % (repo, env.srcdir))
 
-    with cd(env.srcdir):
-        if config.has_option(NAME, 'tag'):
-            local("git checkout %s" %
-                  config.get(NAME, 'tag', vars=config_vars), capture=False)
-        elif config.has_option(NAME, 'branch'):
-            local("git checkout %s" %
-                  config.get(NAME, 'branch', vars=config_vars), capture=False)
+    if config.has_option(NAME, 'tag'):
+        _local("git checkout %s" % config.get(NAME, 'tag', vars=config_vars),
+               cwd=env.srcdir)
+    elif config.has_option(NAME, 'branch'):
+        _local("git checkout %s" % config.get(NAME, 'branch', vars=config_vars),
+               cwd=env.srcdir)
 
 if __name__ == '__main__':
     clone("0.9.13", "doc/example-%s.ini" % NAME,

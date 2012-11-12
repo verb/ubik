@@ -17,7 +17,7 @@ import ConfigParser
 import logging
 import os, os.path
 
-from fabric.api import cd, local, prompt
+from . import _local
 
 NAME = 'copy'
 log = logging.getLogger(NAME)
@@ -52,6 +52,6 @@ def copysrc(version, config, env):
 
     # The secret sauce is RSYNC!
     if os.path.exists(sourcedir):
-        local("rsync -rvC --delete %s/ %s/" % (sourcedir, destdir), capture=False)
+        _local("rsync -rvC --delete %s/ %s/" % (sourcedir, destdir))
     else:
         log.error("Source directory %s does not exist" % sourcedir)

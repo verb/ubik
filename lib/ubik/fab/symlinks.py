@@ -17,7 +17,7 @@ import ConfigParser
 import logging
 import os, os.path
 
-from fabric.api import cd, local, prompt, warn
+from fabric.api import local, prompt, warn
 from ubik import builder, packager
 
 NAME = 'symlinks'

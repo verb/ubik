@@ -17,7 +17,7 @@ import ConfigParser
 import logging
 import os, os.path
 
-from fabric.api import cd, local, prompt
+from fabric.api import local, prompt
 
 NAME = 'tgz'
 log = logging.getLogger(NAME)

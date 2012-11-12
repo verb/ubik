@@ -17,7 +17,7 @@ import ConfigParser
 import logging
 import os, os.path
 
-from fabric.api import cd, local, prompt
+from . import _local
 
 NAME = 'svn'
 log = logging.getLogger(NAME)
@@ -38,8 +38,8 @@ def checkout(version, config, env):
                       {'version': version.split('-',1)[0],})
 
     if not os.path.exists(os.path.join(env.srcdir, '.svn')):
-        local("svn co %s %s" % (repo, env.srcdir), capture=False)
+        _local("svn co %s %s" % (repo, env.srcdir), capture=False)
     else:
         with cd(env.srcdir):
-            local("svn update")
+            _local("svn update")
 

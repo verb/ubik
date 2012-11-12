@@ -18,7 +18,7 @@ import os, os.path
 
 from ubik import builder
 
-from fabric.api import cd, local, prompt, warn
+from fabric.api import local, prompt, warn
 
 NAME = 'supervisor'
 DEFAULT_CONFDIR = '/etc/opt/pflex/supervisor/conf.d'
