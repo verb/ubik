@@ -38,7 +38,7 @@ def checkout(version, config, env):
                       {'version': version.split('-',1)[0],})
 
     if not os.path.exists(os.path.join(env.srcdir, '.svn')):
-        _local("svn co %s %s" % (repo, env.srcdir), capture=False)
+        _local("svn co %s %s" % (repo, env.srcdir))
     else:
         with cd(env.srcdir):
             _local("svn update")
