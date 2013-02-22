@@ -111,8 +111,9 @@ class Builder(object):
             pkgcfg = self.get_config(pkgcfg)
 
         log.info('Commence to build package ' + pkgcfg.get('package', 'name'))
+        pkgcfg_modules = set(s.split(':', 1)[0] for s in pkgcfg.sections())
         for section, module, buildfunc in build_modules:
-            if pkgcfg.has_section(section):
+            if section in pkgcfg_modules:
                 log.info("Found %s section!  Importing the needful..." % section)
                 module_statement = ("import %s; %s.%s(version=version, "
                     "config=pkgcfg, env=self.env)" %

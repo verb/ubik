@@ -22,11 +22,27 @@ from fabric.api import local, prompt, warn
 
 NAME = 'supervisor'
 DEFAULT_CONFDIR = '/etc/opt/pflex/supervisor/conf.d'
+SUP_PROGRAM_KEYS = (
+    'autostart',
+    'command',
+    'directory',
+    'startsecs',
+    'stopwaitsecs'
+)
 
 def _get_config(configfile='package.ini'):
     config = ConfigParser.SafeConfigParser()
     config.read(configfile)
     return config
+
+def _write_supervisor_section(fp, config, section, config_vars):
+    service = config.get(section, 'service', vars=config_vars)
+    fp.write('[program:%s]\n' % service)
+    for option in SUP_PROGRAM_KEYS:
+        if config.has_option(section, option):
+            fp.write('%s = %s\n' % (option,
+                     config.get(section, option, vars=config_vars)))
+    fp.write('\n')
 
 def write_supervisor_config(version, config, env):
     'Creates a configfile to be run by pflex-appsupport supervisord'
@@ -46,20 +62,18 @@ def write_supervisor_config(version, config, env):
         confdir = config.get(NAME, 'confdir', vars=config_vars)
     except ConfigParser.NoOptionError:
         confdir = DEFAULT_CONFDIR
-    service = config.get(NAME, 'service', vars=config_vars)
-    confpath = os.path.join(confdir, service + '.conf')
     local_confdir = os.path.join(env.rootdir, confdir.strip('/'))
+
+    pkgname = config.get('package', 'name', vars=config_vars)
+    confpath = os.path.join(confdir, pkgname + '.conf')
     local_confpath = os.path.join(env.rootdir, confpath.strip('/'))
     if not os.path.exists(local_confdir):
         local('mkdir -m 750 -p %s' % local_confdir, capture=False)
+
     with open(local_confpath, 'w') as sconf:
-        sconf.write('[program:%s]\n' % service)
-        sconf.write('command = %s\n' % 
-                    config.get(NAME, 'command', vars=config_vars))
-        for option in ('directory','autostart','startsecs','stopwaitsecs'):
-            if config.has_option(NAME, option):
-                sconf.write('%s = %s\n' % (option,
-                            config.get(NAME, option, vars=config_vars)))
+        for section in config.sections():
+            if section == 'supervisor' or section.startswith('supervisor:'):
+                _write_supervisor_section(sconf, config, section, config_vars)
 
 if __name__ == '__main__':
     write_supervisor_config('1.0', 'doc/example-%s.ini' % NAME,
