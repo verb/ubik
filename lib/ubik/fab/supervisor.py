@@ -60,11 +60,6 @@ def write_supervisor_config(version, config, env):
             if config.has_option(NAME, option):
                 sconf.write('%s = %s\n' % (option,
                             config.get(NAME, option, vars=config_vars)))
-        ### TODO: remove once config files migration 'workdir' -> 'directory'
-        if config.has_option(NAME, 'workdir'):
-            sconf.write('directory = %s\n' % 
-                        config.get(NAME, 'workdir', vars=config_vars))
-        ### TODONE
 
 if __name__ == '__main__':
     write_supervisor_config('1.0', 'doc/example-%s.ini' % NAME,
