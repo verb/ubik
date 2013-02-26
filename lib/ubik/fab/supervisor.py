@@ -36,13 +36,19 @@ def _get_config(configfile='package.ini'):
     return config
 
 def _write_supervisor_section(fp, config, section, config_vars):
-    service = config.get(section, 'service', vars=config_vars)
-    fp.write('[program:%s]\n' % service)
-    for option in SUP_PROGRAM_KEYS:
-        if config.has_option(section, option):
-            fp.write('%s = %s\n' % (option,
-                     config.get(section, option, vars=config_vars)))
-    fp.write('\n')
+    try:
+        service = config.get(section, 'service', vars=config_vars)
+    except ConfigParser.NoOptionError:
+        # A section with no service definition is legal for changing config
+        # for this module, but it means we have nothing to do here.
+        pass
+    else:
+        fp.write('[program:%s]\n' % service)
+        for option in SUP_PROGRAM_KEYS:
+            if config.has_option(section, option):
+                fp.write('%s = %s\n' % (option,
+                         config.get(section, option, vars=config_vars)))
+        fp.write('\n')
 
 def write_supervisor_config(version, config, env):
     'Creates a configfile to be run by pflex-appsupport supervisord'
