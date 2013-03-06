@@ -68,7 +68,7 @@ def build(version, config, env):
     except ConfigParser.Error:
         pass
 
-    _local("echo mvn %s %s" % (properties, target), cwd=builddir)
+    _local("mvn %s %s" % (properties, target), cwd=builddir)
 
 def clean(builddir):
     'Remove build directory and packages'
