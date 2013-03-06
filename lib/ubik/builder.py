@@ -39,6 +39,7 @@ build_modules = [
     ['ant', 'ubik.fab.ant', 'build'],
     ['fab', 'ubik.fab.fab', 'build'],
     ['make', 'ubik.fab.make', 'build'],
+    ['maven', 'ubik.fab.maven', 'build'],
     ['distutils', 'ubik.fab.distutils', 'build'],
     ['pip', 'ubik.fab.pip', 'build'],
     # Post processing modules
